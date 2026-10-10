@@ -31,6 +31,7 @@ variables:
 github-sync:
   stage: sync
   <<: *github-common
+  tags: [linux-truenas]
   timeout: 3h
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
@@ -80,6 +81,7 @@ github-sync:
 github-dispatch:
   stage: sync
   <<: *github-common
+  tags: [linux-truenas]
   timeout: 3h
   rules:
     - if: $CI_PIPELINE_SOURCE == "web"
@@ -98,6 +100,7 @@ github-dispatch:
 github-mr-build:
   stage: sync
   <<: *github-common
+  tags: [linux-truenas]
   timeout: 3h
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"

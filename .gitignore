@@ -80,3 +80,5 @@ test/goldens/failures/
 /mcpb/server/
 *.mcpb
 .flutter-sdk/
+*.jks
+key.properties
