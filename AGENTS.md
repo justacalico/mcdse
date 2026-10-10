@@ -35,6 +35,10 @@ site under `landing/`.
 - `ProfileParser.read` throws `FormatException` on non-JSON input; returns null
   for valid-but-non-object JSON. `MainViewModel` catches and calls `showError`.
 - `window_manager` init is skipped when `FLUTTER_TEST` is set.
+- Golden tests live in `test/goldens/` (one per screen/dialog + theme
+  variants). Regenerate with `flutter test test/goldens/ --update-goldens`.
+  Roboto is bundled in `assets/fonts/` and loaded in the golden `setUpAll`
+  so text renders as real glyphs.
 - In widget tests, `BusyIndicator` animates forever — use bounded `tester.pump`
   loops inside `tester.runAsync` (file IO needs the real event loop).
 - Pak key constant lives in `lib/data/secrets.dart` (`PakAesKey`).

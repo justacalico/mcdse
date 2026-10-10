@@ -75,3 +75,4 @@ coverage/
 # Local secrets / test artifacts
 *.secret
 tool/dbg.dart
+test/goldens/failures/

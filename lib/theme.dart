@@ -28,6 +28,7 @@ enum AppTheme {
 ThemeData buildThemeData(AppTheme theme) {
   const seedColor = Color(0xFF4CAF50);
   final base = ThemeData(
+    fontFamily: 'Roboto',
     colorScheme: ColorScheme.fromSeed(
         seedColor: seedColor,
         brightness: theme == AppTheme.light

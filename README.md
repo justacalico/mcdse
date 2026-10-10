@@ -46,9 +46,14 @@ flutter build macos
 ## Testing
 
 ```bash
-flutter test            # unit + widget smoke tests
+flutter test            # unit + widget + golden tests
+flutter test --update-goldens   # regenerate golden images
 flutter analyze         # lint
 ```
+
+| Dark | Light | Item editor |
+|---|---|---|
+| ![Inventory — dark theme](test/goldens/goldens/main_window_dark.png) | ![Inventory — light theme](test/goldens/goldens/main_window_light.png) | ![Item editor](test/goldens/goldens/inventory_item_selected.png) |
 
 ## Not affiliated
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'widgets/custom_title_bar.dart';
+import 'widgets/save_picker_dialog.dart';
 
 import '../app_model.dart';
 import '../data/constants.dart';
@@ -151,9 +152,9 @@ class AppShellState extends State<AppShell> {
         {'gameContentLoaded': AppModel.gameContentLoaded.toString()});
     _log('Loading Done');
     setState(() => _mainWindowVisible = true);
-    try {
-      windowManager.setTitle(R.applicationTitle);
-    } catch (_) {}
+    if (Platform.environment['FLUTTER_TEST'] != 'true') {
+      windowManager.setTitle(R.applicationTitle).catchError((_) {});
+    }
     // If no save was opened via argv, offer the detected save files.
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _maybePromptSaveFile());
@@ -167,60 +168,10 @@ class AppShellState extends State<AppShell> {
     }
     final saves = Constants.detectedSaveFiles();
     if (saves.isEmpty) return;
-    String fmtDate(DateTime t) {
-      final l = t.toLocal();
-      String two(int v) => v.toString().padLeft(2, '0');
-      return '${l.year}-${two(l.month)}-${two(l.day)} '
-          '${two(l.hour)}:${two(l.minute)}';
-    }
 
     final picked = await showDialog<String>(
       context: context,
-      builder: (ctx) => Dialog(
-        child: SizedBox(
-          width: 520,
-          height: 420,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
-                child: Text('Open a save file',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
-              ),
-              Expanded(
-                child: ListView(
-                  children: [
-                for (final f in saves)
-                  ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.insert_drive_file_outlined),
-                    title: Text(f.path.split(RegExp(r'[/\\]')).last),
-                    subtitle: Text(
-                      f.parent.path,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    trailing: Text(fmtDate(f.lastModifiedSync()),
-                        style: const TextStyle(fontSize: 11)),
-                    onTap: () => Navigator.of(ctx).pop(f.path),
-                  ),
-                    const Divider(height: 1),
-                    ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.folder_open),
-                      title: const Text('Browse for a file…'),
-                      onTap: () => Navigator.of(ctx).pop(''),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (ctx) => SavePickerDialog(saves: saves),
     );
     if (picked == null || !mounted) return;
     if (picked.isEmpty) {

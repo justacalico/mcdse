@@ -141,9 +141,7 @@ class MainWindowState extends State<MainWindow> {
         : R.applicationTitle;
     WindowTitle.title = title;
     if (Platform.environment.containsKey('FLUTTER_TEST')) return;
-    try {
-      windowManager.setTitle(title);
-    } catch (_) {}
+    windowManager.setTitle(title).catchError((_) {});
   }
 
   void _showError(String message) {
@@ -165,6 +163,7 @@ class MainWindowState extends State<MainWindow> {
   }
 
   Future<void> _checkForNewVersion() async {
+    if (Platform.environment['FLUTTER_TEST'] == 'true') return;
     try {
       await Config.instance.downloadAsync();
       setState(() {});
