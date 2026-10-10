@@ -14,6 +14,7 @@ import '../../mcp/mcpb_exporter.dart';
 import '../../services/config.dart';
 import '../../theme.dart';
 import '../../services/event_logger.dart';
+import '../../services/save_file_watcher.dart';
 import '../../services/string_library.dart';
 import '../../viewmodels/main_view_model.dart';
 import '../../viewmodels/profile_view_model.dart';
@@ -53,13 +54,43 @@ class MainWindowState extends State<MainWindow> {
   final GlobalKey<ChestTabState> _chestTabKey = GlobalKey();
   final GlobalKey<_TabsState> _tabsKey = GlobalKey();
 
+  final SaveFileWatcher _watcher = SaveFileWatcher();
+  String? _watchedPath;
+
   @override
   void initState() {
     super.initState();
     _model.showError = _showError;
     _checkForNewVersion();
+    _profileModel.profile.subscribe((_) => _watchOpenFile());
+    _watchOpenFile();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _updateTitle());
+  }
+
+  @override
+  void dispose() {
+    _watcher.dispose();
+    super.dispose();
+  }
+
+  void _watchOpenFile() {
+    final path = _profileModel.filePath;
+    if (path == _watchedPath ||
+        Platform.environment['FLUTTER_TEST'] == 'true') {
+      return;
+    }
+    _watchedPath = path;
+    if (path == null) {
+      _watcher.dispose();
+      return;
+    }
+    _watcher.watch(path, _onExternalFileChange);
+  }
+
+  void _onExternalFileChange(String path) {
+    if (_busy || !mounted) return;
+    unawaited_(handleFileOpenAsync(path));
   }
 
   // ---- menus ----
@@ -158,8 +189,11 @@ class MainWindowState extends State<MainWindow> {
     EventLogger.logEvent('handleFileSaveAsync',
         {'extension': fileName.split('.').last});
     await _model.handleFileSaveAsync(fileName, profile);
+    final savedPath = _profileModel.filePath;
+    if (savedPath != null) _watcher.markSelfWrite(savedPath);
     setState(() => _busy = false);
     _updateTitle();
+    _watchOpenFile();
   }
 
   void _updateTitle() {

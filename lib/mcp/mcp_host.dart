@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:mcp_dart/mcp_dart.dart';
 
@@ -63,33 +64,47 @@ abstract final class McpHost {
     if (enabled && !running) {
       try {
         await start();
-      } catch (_) {}
+        developer.log('MCP server listening on $endpoint');
+      } catch (e) {
+        developer.log('MCP server failed to start: $e');
+      }
     }
   }
 
-  static Future<int> start({int? port}) async {
+  static Future<int> start({int? port, int retries = 3}) async {
     await stop();
-    final srv = StreamableMcpServer(
-      serverFactory: (_) {
-        final server = McpServer(
-          const Implementation(
-              name: 'mcdse-save-editor', version: '1.0.0'),
-          options: McpServerOptions(
-            capabilities:
-                ServerCapabilities(tools: ServerCapabilitiesTools()),
-          ),
+    Object? lastError;
+    for (var attempt = 0; attempt <= retries; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+      try {
+        final srv = StreamableMcpServer(
+          serverFactory: (_) {
+            final server = McpServer(
+              const Implementation(
+                  name: 'mcdse-save-editor', version: '1.0.0'),
+              options: McpServerOptions(
+                capabilities:
+                    ServerCapabilities(tools: ServerCapabilitiesTools()),
+              ),
+            );
+            registerSaveTools(server, session);
+            return server;
+          },
+          host: '127.0.0.1',
+          port: port ?? configuredPort,
+          path: path,
+          enableJsonResponse: true,
         );
-        registerSaveTools(server, session);
-        return server;
-      },
-      host: '127.0.0.1',
-      port: port ?? configuredPort,
-      path: path,
-      enableJsonResponse: true,
-    );
-    await srv.start();
-    _server = srv;
-    return srv.boundPort;
+        await srv.start();
+        _server = srv;
+        return srv.boundPort;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw StateError('MCP server failed to start: $lastError');
   }
 
   static Future<void> stop() async {

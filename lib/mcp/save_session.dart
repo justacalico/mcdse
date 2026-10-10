@@ -275,7 +275,12 @@ class SaveSession {
     items.add(item);
     _commit(location, items);
     _changed();
-    return {'index': items.length - 1, ...item.json};
+    return {
+      'index': items.length - 1,
+      ...item.json,
+      if (ItemDatabase.all.isEmpty)
+        'warning': 'no game catalog loaded — fields not validated',
+    };
   }
 
   Map<String, dynamic> updateItem(
@@ -322,7 +327,11 @@ class SaveSession {
     ));
     item.json.addAll(fields);
     _changed();
-    return item.json;
+    return {
+      ...item.json,
+      if (ItemDatabase.all.isEmpty)
+        'warning': 'no game catalog loaded — fields not validated',
+    };
   }
 
   Map<String, dynamic> duplicateItem(int index, String location) {

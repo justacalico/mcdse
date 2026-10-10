@@ -15,6 +15,7 @@ void main() {
 
   test('enable/disable persists to settings', () async {
     expect(McpHost.enabled, false);
+    SettingsStore.saveSetting(McpHost.portKey, '0');
     await McpHost.setEnabled(true);
     expect(McpHost.enabled, true);
     await McpHost.setEnabled(false);
