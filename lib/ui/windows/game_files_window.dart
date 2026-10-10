@@ -19,8 +19,7 @@ class GameFilesResult {
 /// Ported from `UI/Windows/GameFilesWindow.xaml(.cs)` — shown at startup when
 /// no pak files were found, or after choosing "Relaunch to change".
 class GameFilesWindow extends StatefulWidget {
-  const GameFilesWindow._(
-      {this.initialPath, required this.allowNoContent});
+  const GameFilesWindow._({this.initialPath, this.allowNoContent = true});
 
   final String? initialPath;
   final bool allowNoContent;
@@ -31,9 +30,11 @@ class GameFilesWindow extends StatefulWidget {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
         child: SizedBox(
-          width: 600,
-          height: 200,
+          width: 560,
           child: GameFilesWindow._(
               initialPath: initialPath, allowNoContent: allowNoContent),
         ),
@@ -47,12 +48,16 @@ class GameFilesWindow extends StatefulWidget {
 
 class _GameFilesWindowState extends State<GameFilesWindow> {
   late final TextEditingController _pathController;
+  String? _error;
+
+  static const _highPriorityFolderNames = {
+    'Mojang', 'Dungeons', 'Content', 'Paks', 'dungeons', 'products'
+  };
 
   @override
   void initState() {
     super.initState();
-    _pathController =
-        TextEditingController(text: widget.initialPath ?? '');
+    _pathController = TextEditingController(text: widget.initialPath ?? '');
   }
 
   @override
@@ -63,17 +68,12 @@ class _GameFilesWindowState extends State<GameFilesWindow> {
 
   Future<void> _browse() async {
     EventLogger.logEvent('pathBrowseButton_Click');
-    // file_selector has no folder picker; use getDirectoryPath.
-    final dir = await getDirectoryPath(
-        confirmButtonText: R.ok);
+    final dir = await getDirectoryPath(confirmButtonText: R.ok);
     if (dir != null) {
       _pathController.text = dir;
+      setState(() => _error = null);
     }
   }
-
-  static const _highPriorityFolderNames = {
-    'Mojang', 'Dungeons', 'Content', 'Paks', 'dungeons', 'products'
-  };
 
   /// Ported from upstream `isValidSelectedPath` — returns the normalized
   /// paks directory (possibly nested below the chosen path), or null.
@@ -84,7 +84,8 @@ class _GameFilesWindowState extends State<GameFilesWindow> {
     final dir = Directory(testPath);
     if (!dir.existsSync()) return null;
 
-    if (File('${dir.path}${Platform.pathSeparator}${Constants.firstPakFilename}')
+    if (File(
+            '${dir.path}${Platform.pathSeparator}${Constants.firstPakFilename}')
         .existsSync()) {
       return dir.path;
     }
@@ -99,9 +100,8 @@ class _GameFilesWindowState extends State<GameFilesWindow> {
           .existsSync()) {
         return entry.path;
       }
-      final name = entry.uri.pathSegments
-          .where((seg) => seg.isNotEmpty)
-          .last;
+      final name =
+          entry.uri.pathSegments.where((seg) => seg.isNotEmpty).last;
       if (_highPriorityFolderNames.contains(name)) {
         final found = _foundInDirectory(entry.path);
         if (found != null) return found;
@@ -110,116 +110,110 @@ class _GameFilesWindowState extends State<GameFilesWindow> {
     return null;
   }
 
+  void _onOk() {
+    final validPath = _isValidSelectedPath();
+    EventLogger.logEvent(
+        'okButton_Click', {'isValidPath': validPath != null});
+    if (validPath != null) {
+      Navigator.of(context).pop(GameFilesResult(
+          GameFilesWindowResult.useSelectedPath, validPath));
+    } else {
+      setState(() => _error = R.noGameFilesFoundErrorMessage);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                R.gameFilesWindowMessage,
-                softWrap: true,
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Title.
+          Text(R.gameFilesWindowTitle,
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          Text(R.gameFilesWindowMessage,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.hintColor)),
+          const SizedBox(height: 20),
+          // Game files group.
+          Text(R.gameFilesWindowGroupboxHeader,
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(color: theme.hintColor)),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 48,
+                child: Text(R.gameFilesWindowTextboxLabel),
               ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(5),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(R.gameFilesWindowGroupboxHeader,
-                    style: const TextStyle(fontSize: 12)),
-                Row(
-                  children: [
-                    Text(R.gameFilesWindowTextboxLabel),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _pathController,
-                        decoration: const InputDecoration(
-                            isDense: true, border: OutlineInputBorder()),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 30,
-                      child: TextButton(
-                          onPressed: _browse, child: const Text('...')),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 32,
-          child: Padding(
-            padding: const EdgeInsets.all(5),
-            child: Row(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    EventLogger.logEvent('exitButton_Click');
-                    Navigator.of(context).pop(
-                        const GameFilesResult(GameFilesWindowResult.exit));
-                  },
-                  child: Text(R.exit),
-                ),
-                const Spacer(),
-                TextButton(
+              Expanded(
+                child: TextField(
+                  controller: _pathController,
                   autofocus: true,
-                  onPressed: () {
-                    final validPath = _isValidSelectedPath();
-                    EventLogger.logEvent(
-                        'okButton_Click', {'isValidPath': validPath != null});
-                    if (validPath != null) {
-                      Navigator.of(context).pop(GameFilesResult(
-                          GameFilesWindowResult.useSelectedPath, validPath));
-                      return;
-                    }
-                    showDialog<void>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text(R.error),
-                        content:
-                            Text(R.noGameFilesFoundErrorMessage),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              child: Text(R.ok)),
-                        ],
-                      ),
-                    );
+                  onSubmitted: (_) => _onOk(),
+                  onChanged: (_) {
+                    if (_error != null) setState(() => _error = null);
                   },
-                  child: Text(R.ok),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: '/path/to/Dungeons/Content/Paks',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6)),
+                    errorText: _error,
+                    errorMaxLines: 2,
+                  ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    EventLogger.logEvent('noButton_Click');
-                    Navigator.of(context).pop(
-                        const GameFilesResult(
-                            GameFilesWindowResult.noContent));
-                  },
-                  child: Text(widget.allowNoContent
-                      ? R.gameFilesWindowNoContentButton
-                      : R.cancel),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _browse,
+                icon: const Icon(Icons.folder_open, size: 20),
+                tooltip: R.gameFilesWindowTextboxLabel,
+                style: IconButton.styleFrom(
+                  fixedSize: const Size(40, 40),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      side: BorderSide(
+                          color: theme.dividerColor)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 24),
+          // Button row.
+          Row(
+            children: [
+              TextButton(
+                onPressed: () {
+                  EventLogger.logEvent('exitButton_Click');
+                  Navigator.of(context).pop(
+                      const GameFilesResult(GameFilesWindowResult.exit));
+                },
+                child: Text(R.exit),
+              ),
+              const Spacer(),
+              OutlinedButton(
+                onPressed: () {
+                  EventLogger.logEvent('noButton_Click');
+                  Navigator.of(context).pop(const GameFilesResult(
+                      GameFilesWindowResult.noContent));
+                },
+                child: Text(widget.allowNoContent
+                    ? R.gameFilesWindowNoContentButton
+                    : R.cancel),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(onPressed: _onOk, child: Text(R.ok)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
