@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
+import '../../data/constants.dart';
 import '../../services/event_logger.dart';
 import '../../services/string_library.dart';
 
@@ -66,6 +69,45 @@ class _GameFilesWindowState extends State<GameFilesWindow> {
     if (dir != null) {
       _pathController.text = dir;
     }
+  }
+
+  static const _highPriorityFolderNames = {
+    'Mojang', 'Dungeons', 'Content', 'Paks', 'dungeons', 'products'
+  };
+
+  /// Ported from upstream `isValidSelectedPath` — returns the normalized
+  /// paks directory (possibly nested below the chosen path), or null.
+  String? _isValidSelectedPath() {
+    final testPath = _pathController.text.trim();
+    if (testPath.isEmpty) return null;
+
+    final dir = Directory(testPath);
+    if (!dir.existsSync()) return null;
+
+    if (File('${dir.path}${Platform.pathSeparator}${Constants.firstPakFilename}')
+        .existsSync()) {
+      return dir.path;
+    }
+
+    return _foundInDirectory(dir.path);
+  }
+
+  String? _foundInDirectory(String testPath) {
+    for (final entry in Directory(testPath).listSync()) {
+      if (entry is! Directory) continue;
+      if (File('${entry.path}${Platform.pathSeparator}${Constants.firstPakFilename}')
+          .existsSync()) {
+        return entry.path;
+      }
+      final name = entry.uri.pathSegments
+          .where((seg) => seg.isNotEmpty)
+          .last;
+      if (_highPriorityFolderNames.contains(name)) {
+        final found = _foundInDirectory(entry.path);
+        if (found != null) return found;
+      }
+    }
+    return null;
   }
 
   @override
@@ -138,10 +180,27 @@ class _GameFilesWindowState extends State<GameFilesWindow> {
                 TextButton(
                   autofocus: true,
                   onPressed: () {
-                    EventLogger.logEvent('okButton_Click');
-                    Navigator.of(context).pop(GameFilesResult(
-                        GameFilesWindowResult.useSelectedPath,
-                        _pathController.text));
+                    final validPath = _isValidSelectedPath();
+                    EventLogger.logEvent(
+                        'okButton_Click', {'isValidPath': validPath != null});
+                    if (validPath != null) {
+                      Navigator.of(context).pop(GameFilesResult(
+                          GameFilesWindowResult.useSelectedPath, validPath));
+                      return;
+                    }
+                    showDialog<void>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: Text(R.error),
+                        content:
+                            Text(R.noGameFilesFoundErrorMessage),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: Text(R.ok)),
+                        ],
+                      ),
+                    );
                   },
                   child: Text(R.ok),
                 ),
@@ -152,7 +211,9 @@ class _GameFilesWindowState extends State<GameFilesWindow> {
                         const GameFilesResult(
                             GameFilesWindowResult.noContent));
                   },
-                  child: Text(R.gameFilesWindowNoContentButton),
+                  child: Text(widget.allowNoContent
+                      ? R.gameFilesWindowNoContentButton
+                      : R.cancel),
                 ),
               ],
             ),

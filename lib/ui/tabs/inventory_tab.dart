@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../app_model.dart';
 import '../../data/enums.dart';
@@ -31,6 +30,7 @@ class InventoryTabState extends State<InventoryTab> {
   final _goldController = TextEditingController();
   final _eyeOfEnderController = TextEditingController();
   final _currencyInvalid = <String, bool>{};
+  bool _syncing = false;
 
   @override
   void dispose() {
@@ -66,7 +66,8 @@ class InventoryTabState extends State<InventoryTab> {
   }
 
   Widget _currencyField(String name, String pakImagePath, String assetName,
-      TextEditingController controller, void Function(int) setter) {
+      TextEditingController controller, void Function(int) setter,
+      int? currentValue) {
     final icon = AppModel.gameContentLoaded
         ? ImageResolver.instance.imageSource(pakImagePath)
         : null;
@@ -79,6 +80,20 @@ class InventoryTabState extends State<InventoryTab> {
               ? Image.memory(icon, height: 22)
               : Image.asset('assets/images/$assetName', height: 22),
         ),
+        if (currentValue == null)
+          // Upstream `*AddButton` — creates the currency entry with 0.
+          SizedBox(
+            width: 100,
+            height: 22,
+            child: TextButton(
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              onPressed: _model.profile.value != null
+                  ? () => setter(0)
+                  : null,
+              child: const Text('+'),
+            ),
+          )
+        else
         SizedBox(
           width: 100,
           height: 22,
@@ -95,8 +110,8 @@ class InventoryTabState extends State<InventoryTab> {
                           ? Colors.red
                           : Colors.grey)),
             ),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             onChanged: (text) {
+              if (_syncing) return;
               final v = int.tryParse(text);
               if (v != null) {
                 EventLogger.logEvent('${name}TextBox_TextChanged');
@@ -113,6 +128,9 @@ class InventoryTabState extends State<InventoryTab> {
   }
 
   void _syncCurrency() {
+    // Guarded like upstream's IsEnabled check so programmatic syncs don't
+    // rewrite the currency map via onChanged.
+    _syncing = true;
     final emeralds = _model.emeralds.value;
     if (_emeraldsController.text != (emeralds?.toString() ?? '')) {
       _emeraldsController.text = emeralds?.toString() ?? '';
@@ -125,6 +143,7 @@ class InventoryTabState extends State<InventoryTab> {
     if (_eyeOfEnderController.text != (eoe?.toString() ?? '')) {
       _eyeOfEnderController.text = eoe?.toString() ?? '';
     }
+    _syncing = false;
   }
 
   @override
@@ -163,19 +182,22 @@ class InventoryTabState extends State<InventoryTab> {
                           '/Dungeons/Content/UI/Materials/Character/STATS_emerald',
                           'Emerald.png',
                           _emeraldsController,
-                          (v) => _model.emeralds.setValue = v),
+                          (v) => _model.emeralds.setValue = v,
+                          _model.emeralds.value),
                       _currencyField(
                           'gold',
                           '/Dungeons/Content/UI/Materials/Currency/GoldIndicator',
                           'Gold.png',
                           _goldController,
-                          (v) => _model.gold.setValue = v),
+                          (v) => _model.gold.setValue = v,
+                          _model.gold.value),
                       _currencyField(
                           'eyeOfEnder',
                           '/Dungeons/Content/UI/Materials/Currency/T_EyeOfEnder_Currency',
                           'EyeOfEnder.png',
                           _eyeOfEnderController,
-                          (v) => _model.eyeOfEnder.setValue = v),
+                          (v) => _model.eyeOfEnder.setValue = v,
+                          _model.eyeOfEnder.value),
                       if (showUnlockPortal)
                         Padding(
                           padding: const EdgeInsets.symmetric(

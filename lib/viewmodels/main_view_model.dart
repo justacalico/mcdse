@@ -107,7 +107,13 @@ class MainViewModel {
           filePath.split(Platform.pathSeparator).last));
       return null;
     }
-    final processed = await FileProcessHelper.decrypt(bytes);
+    Uint8List? processed;
+    try {
+      processed = await FileProcessHelper.decrypt(bytes);
+    } catch (e) {
+      EventLogger.logError(e.toString());
+      processed = null;
+    }
     if (processed == null) {
       EventLogger.logError(
           'Content of file "${filePath.split(Platform.pathSeparator).last}" could not be converted to a supported format.');

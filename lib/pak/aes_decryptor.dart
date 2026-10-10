@@ -37,7 +37,7 @@ abstract final class AesDecryptor {
     if (stringLen > 128 || stringLen < -128) return false;
     if (stringLen == 0) return view.getUint16(4, Endian.little) == 0;
     if (stringLen < 0) {
-      final pos = 4 - (stringLen - 1) * 2;
+      final pos = 4 + (-stringLen - 1) * 2;
       if (pos + 2 > block.length) return false;
       return view.getInt16(pos, Endian.little) == 0;
     }

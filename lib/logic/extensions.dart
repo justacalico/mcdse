@@ -121,10 +121,13 @@ extension IterableItemExtensions on Iterable<Item> {
   List<Item> replacing(Item oldValue, Item newValue) {
     final list = toList();
     final index = list.indexOf(oldValue);
-    if (index >= 0) {
-      list.removeAt(index);
-      list.insert(index, newValue);
+    if (index < 0) {
+      // Upstream `replacingAtIndex` throws on a missing item — surface
+      // stale-selection bugs instead of silently no-oping.
+      throw StateError('oldValue not found in collection');
     }
+    list.removeAt(index);
+    list.insert(index, newValue);
     return list;
   }
 

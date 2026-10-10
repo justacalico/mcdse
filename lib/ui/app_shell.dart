@@ -159,7 +159,13 @@ class AppShellState extends State<AppShell> {
   }
 
   void _onReload(String? filePath) {
-    // Upstream recreates the main window so localized strings refresh.
+    // Upstream `onReload` re-sets the profile: re-fires profile
+    // subscribers (resetting filter/selection) and updates the title.
+    final profile = _model.mainModel.profileModel.profile.value;
+    if (filePath != null && profile != null) {
+      _model.mainModel.setProfile(filePath, profile);
+    }
+    // Recreate the main window so localized strings refresh.
     setState(() => _mainWindowEpoch++);
   }
 

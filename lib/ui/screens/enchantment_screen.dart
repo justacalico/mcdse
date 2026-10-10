@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../app_model.dart';
 import '../../data/constants.dart';
@@ -224,9 +223,6 @@ class _EnchantmentScreenState extends State<EnchantmentScreen> {
                           style: const TextStyle(fontSize: 24),
                           decoration: const InputDecoration(
                               border: InputBorder.none, isDense: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly
-                          ],
                           onChanged: _onTierChanged,
                         ),
                       ),

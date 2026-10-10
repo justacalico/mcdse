@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../app_model.dart';
 import '../../data/constants.dart';
@@ -59,6 +58,7 @@ class ItemScreen extends StatefulWidget {
 class ItemScreenState extends State<ItemScreen> {
   late final TextEditingController _powerController;
   bool _powerInvalid = false;
+  bool _syncing = false;
 
   Item? get _item => widget.item;
 
@@ -79,7 +79,11 @@ class ItemScreenState extends State<ItemScreen> {
   }
 
   void _syncPower() {
+    // Guarded like upstream's IsEnabled check so programmatic syncs don't
+    // mutate item.power via onChanged.
+    _syncing = true;
     _powerController.text = _item?.level().toString() ?? '';
+    _syncing = false;
   }
 
   @override
@@ -100,7 +104,7 @@ class ItemScreenState extends State<ItemScreen> {
 
   void _onPowerChanged(String text) {
     final item = _item;
-    if (item == null) return;
+    if (_syncing || item == null) return;
     final level = int.tryParse(text);
     if (level != null) {
       EventLogger.logEvent('powerTextBox_TextChanged', {'level': level});
@@ -308,9 +312,6 @@ class ItemScreenState extends State<ItemScreen> {
                                           ? Colors.red
                                           : Colors.grey)),
                             ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
                             onChanged: _onPowerChanged,
                           ),
                         ),

@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'item.dart';
 import 'currency.dart';
 import 'cosmetic.dart';
@@ -24,8 +25,8 @@ class ProfileSaveFile {
 
   Map<String, int>? _longMap(String key) {
     final raw = json[key];
-    if (raw is! Map<String, dynamic>) return null;
-    return raw.map((k, v) => MapEntry(k, (v as num).toInt()));
+    if (raw is! Map) return null;
+    return _IntMapView(raw);
   }
 
   List<String>? get bonusPrerequisites => _stringList('bonus_prerequisites');
@@ -199,4 +200,26 @@ class ProfileSaveFile {
     if (raw is! List) return null;
     return [for (final e in raw) Item(e as Map<String, dynamic>)];
   }
+}
+
+/// Live view over the underlying JSON `Map` — reads coerce `num` to `int`
+/// and writes update the stored map (upstream returns the raw Dictionary).
+class _IntMapView extends MapBase<String, int> {
+  _IntMapView(this._inner);
+  final Map<dynamic, dynamic> _inner;
+
+  @override
+  int? operator [](Object? key) => (_inner[key] as num?)?.toInt();
+
+  @override
+  void operator []=(String key, int value) => _inner[key] = value;
+
+  @override
+  Iterable<String> get keys => _inner.keys.map((k) => '$k');
+
+  @override
+  void clear() => _inner.clear();
+
+  @override
+  int? remove(Object? key) => (_inner.remove(key) as num?)?.toInt();
 }

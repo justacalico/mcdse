@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../app_model.dart';
 import '../../data/constants.dart';
@@ -25,6 +24,7 @@ class EquipmentScreen extends StatefulWidget {
 
 class _EquipmentScreenState extends State<EquipmentScreen> {
   late final TextEditingController _levelController;
+  bool _syncing = false;
 
   MainEquipmentViewModel get _model => widget.model;
 
@@ -42,7 +42,12 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
 
   void _syncLevelText(int? level) {
     final text = level?.toString() ?? '';
-    if (_levelController.text != text) _levelController.text = text;
+    if (_levelController.text == text) return;
+    // Guarded like upstream's IsEnabled check: a programmatic sync must
+    // not fire onChanged (which would rewrite xp).
+    _syncing = true;
+    _levelController.text = text;
+    _syncing = false;
   }
 
   Widget _slotButton(EquipmentSlotEnum slot, Item? Function() getItem) {
@@ -80,7 +85,7 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
   }
 
   void _onLevelChanged(String text) {
-    if (!_model.equipmentCanExist.value) return;
+    if (_syncing || !_model.equipmentCanExist.value) return;
     final level = int.tryParse(text);
     if (level != null) {
       EventLogger.logEvent('levelTextBox_TextChanged', {'level': level});
@@ -151,9 +156,6 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
                                   textAlign: TextAlign.center,
                                   decoration: const InputDecoration(
                                       border: InputBorder.none, isDense: true),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly
-                                  ],
                                   onChanged: _onLevelChanged,
                                 ),
                               ),

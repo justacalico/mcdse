@@ -38,9 +38,52 @@ abstract final class ProfileParser {
 
   static ProfileSaveFile? read(Uint8List input) {
     final sanitized = sanitize(input);
-    final decoded = json.decode(utf8.decode(sanitized));
+    // Upstream parses with AllowTrailingCommas=true.
+    final decoded = json.decode(
+        _stripTrailingCommas(utf8.decode(sanitized)));
     if (decoded is! Map<String, dynamic>) return null;
     return ProfileSaveFile(decoded);
+  }
+
+  /// Removes `,}` / `,]` trailing commas outside string literals.
+  static String _stripTrailingCommas(String text) {
+    final out = StringBuffer();
+    var inString = false;
+    var escaped = false;
+    for (var i = 0; i < text.length; i++) {
+      final ch = text[i];
+      if (escaped) {
+        out.write(ch);
+        escaped = false;
+        continue;
+      }
+      if (ch == '\\' && inString) {
+        out.write(ch);
+        escaped = true;
+        continue;
+      }
+      if (ch == '"') {
+        inString = !inString;
+        out.write(ch);
+        continue;
+      }
+      if (ch == ',' && !inString) {
+        // Look ahead past whitespace for a closing bracket.
+        var j = i + 1;
+        while (j < text.length &&
+            (text[j] == ' ' ||
+                text[j] == '\n' ||
+                text[j] == '\r' ||
+                text[j] == '\t')) {
+          j++;
+        }
+        if (j < text.length && (text[j] == '}' || text[j] == ']')) {
+          continue; // drop the comma
+        }
+      }
+      out.write(ch);
+    }
+    return out.toString();
   }
 
   /// Writes the profile as pretty-printed JSON, omitting nulls at the typed
@@ -54,11 +97,26 @@ abstract final class ProfileParser {
     return utf8.encode(_escapeNonLatin1(text));
   }
 
+  /// Mirrors System.Text.Json's default encoder: non-Latin-1 characters are
+  /// escaped as \uXXXX (surrogate pairs for astral planes), and the
+  /// HTML-sensitive ASCII characters <, >, &, ' are escaped too.
   static String _escapeNonLatin1(String text) {
+    String esc(int cp) =>
+        '\\u${cp.toRadixString(16).padLeft(4, '0')}';
     final buf = StringBuffer();
     for (final rune in text.runes) {
-      if (rune > 0x7E) {
-        buf.write('\\u${rune.toRadixString(16).padLeft(4, '0')}');
+      if (rune > 0xFFFF) {
+        // Emit a UTF-16 surrogate pair — a raw \uXXXXX would be parsed as
+        // a BMP char plus a literal trailing digit.
+        final v = rune - 0x10000;
+        buf.write(esc(0xD800 + (v >> 10)));
+        buf.write(esc(0xDC00 + (v & 0x3FF)));
+      } else if (rune > 0x7E ||
+          rune == 0x3C ||
+          rune == 0x3E ||
+          rune == 0x26 ||
+          rune == 0x27) {
+        buf.write(esc(rune));
       } else {
         buf.writeCharCode(rune);
       }

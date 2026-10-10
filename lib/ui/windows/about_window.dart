@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/constants.dart';
+import '../../services/config.dart';
 import '../../services/string_library.dart';
 
 /// Ported from `UI/Windows/AboutWindow.xaml(.cs)`.
@@ -65,8 +66,8 @@ class AboutWindow extends StatelessWidget {
                 ),
               ),
               Text(
-                R.formatVersion(
-                    debug ? 'Debug' : 'Release', Constants.currentVersionNumber),
+                R.formatVersion(Config.instance.versionLabel(),
+                    Constants.currentVersionNumber),
                 style: const TextStyle(fontSize: 12),
               ),
             ],

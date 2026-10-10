@@ -15,7 +15,10 @@ class PropertyBuilder extends StatefulWidget {
 }
 
 class _PropertyBuilderState extends State<PropertyBuilder> {
-  final List<PropertySubscriber<dynamic>> _subs = [];
+  /// (property, subscriber) pairs — unsubscribed from the exact property
+  /// they were registered on even if the watched list changes shape.
+  final List<(IReadProperty<dynamic>, PropertySubscriber<dynamic>)> _subs =
+      [];
 
   @override
   void initState() {
@@ -30,25 +33,27 @@ class _PropertyBuilderState extends State<PropertyBuilder> {
       }
 
       p.subscribe(sub);
-      _subs.add(sub);
+      _subs.add((p, sub));
     }
+  }
+
+  void _unsubAll() {
+    for (final (property, sub) in _subs) {
+      property.unsubscribe(sub);
+    }
+    _subs.clear();
   }
 
   @override
   void didUpdateWidget(PropertyBuilder oldWidget) {
     super.didUpdateWidget(oldWidget);
-    for (var i = 0; i < _subs.length; i++) {
-      oldWidget.properties[i].unsubscribe(_subs[i]);
-    }
-    _subs.clear();
+    _unsubAll();
     _listenAll();
   }
 
   @override
   void dispose() {
-    for (var i = 0; i < _subs.length; i++) {
-      widget.properties[i].unsubscribe(_subs[i]);
-    }
+    _unsubAll();
     super.dispose();
   }
 

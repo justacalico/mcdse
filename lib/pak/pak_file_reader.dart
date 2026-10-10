@@ -83,7 +83,7 @@ class PakFileReader {
         throw ArgumentError('The provided key is invalid');
       }
       if (stringLen < 0) {
-        indexReader.position += (stringLen - 1) * 2;
+        indexReader.position += (-stringLen - 1) * 2;
         if (indexReader.readUInt16() != 0) {
           throw ArgumentError('The provided key is invalid');
         }

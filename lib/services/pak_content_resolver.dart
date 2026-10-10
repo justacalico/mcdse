@@ -298,20 +298,21 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
     switch (rarity) {
       case Rarity.common:
         return imageSource(
-            'Dungeons/Content/UI/Materials/Inventory2/Item/drops_items_frame');
+            '/Dungeons/Content/UI/Materials/MissionSelectMap/inspector/loot/drops_gear_frame');
       case Rarity.rare:
         return imageSource(
-            'Dungeons/Content/UI/Materials/Inventory2/Item/drops_rare_frame');
+            '/Dungeons/Content/UI/Materials/MissionSelectMap/inspector/loot/drops_rare_frame');
       case Rarity.unique:
         return imageSource(
-            'Dungeons/Content/UI/Materials/Inventory2/Item/drops_unique_frame');
+            '/Dungeons/Content/UI/Materials/MissionSelectMap/inspector/loot/drops_unique_frame');
     }
   }
 
   @override
   Uint8List? imageSourceForEnchantmentId(String enchantmentId) {
     if (enchantmentId == Constants.defaultEnchantmentId) {
-      return imageSource('Dungeons/Content/UI/Materials/Inventory2/Enchantment/locked_enchantment_slot');
+      return imageSource(
+          '/Dungeons/Content/UI/Materials/MissionSelectMap/marker/locked_node');
     }
     final fullPath = _enchantments[enchantmentId];
     if (fullPath != null) {

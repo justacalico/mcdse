@@ -21,10 +21,14 @@ class SelectionWindow extends StatefulWidget {
     required this.items,
     this.showFilterButtons = false,
     this.filter,
+    this.initialSelection,
   });
 
   final String title;
   final List<SelectionEntry> items;
+
+  /// Id to pre-select in the list (upstream `_selectedListBoxItem`).
+  final String? initialSelection;
 
   /// Whether to show the MysteryBox filter buttons row (item pickers only).
   final bool showFilterButtons;
@@ -32,18 +36,15 @@ class SelectionWindow extends StatefulWidget {
   /// Items for the all-items picker (with filter buttons).
   static Future<String?> showItems(BuildContext context, String? currentItemType) {
     final title = R.getString('merchant_slot_select_item') ?? R.selectItem;
-    return show(
-      context,
-      title,
-      ItemFilterEnum.all,
-      showFilterButtons: true,
-    );
+    return show(context, title, ItemFilterEnum.all,
+        showFilterButtons: true, initialSelection: currentItemType);
   }
 
   /// Items filtered by [filter] (melee/ranged/armor/artifact).
   static Future<String?> showFilteredItems(
       BuildContext context, ItemFilterEnum filter, String? currentItemType) {
-    return show(context, _titleForFilter(filter), filter);
+    return show(context, _titleForFilter(filter), filter,
+        initialSelection: currentItemType);
   }
 
   static String _titleForFilter(ItemFilterEnum filter) {
@@ -79,8 +80,8 @@ class SelectionWindow extends StatefulWidget {
         powerful: Constants.powerful.contains(enchantment),
       ));
     }
-    return _showDialog(
-        context, title, SelectionWindow._(title: title, items: entries));
+    return _showDialog(context, title,
+        SelectionWindow._(title: title, items: entries, initialSelection: currentId));
   }
 
   static Future<String?> showArmorProperties(
@@ -93,6 +94,7 @@ class SelectionWindow extends StatefulWidget {
         R.selectArmorProperty,
         SelectionWindow._(
           title: R.selectArmorProperty,
+          initialSelection: currentId,
           items: [
             for (final id in entries)
               SelectionEntry(
@@ -104,7 +106,8 @@ class SelectionWindow extends StatefulWidget {
   }
 
   static Future<String?> show(BuildContext context, String title,
-      ItemFilterEnum filter, {bool showFilterButtons = false}) {
+      ItemFilterEnum filter,
+      {bool showFilterButtons = false, String? initialSelection}) {
     return _showDialog(
         context,
         title,
@@ -112,7 +115,8 @@ class SelectionWindow extends StatefulWidget {
             title: title,
             items: const [],
             showFilterButtons: showFilterButtons,
-            filter: filter));
+            filter: filter,
+            initialSelection: initialSelection));
   }
 
   static Future<String?> _showDialog(
@@ -261,6 +265,7 @@ class _SelectionWindowState extends State<SelectionWindow> {
                             image: MemoryImage(uniqueBg), fit: BoxFit.cover)),
                 child: ListTile(
                   dense: true,
+                  selected: widget.initialSelection == entry.id,
                   leading: SizedBox(
                     width: 50,
                     height: 50,

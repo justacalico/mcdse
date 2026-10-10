@@ -96,6 +96,9 @@ class _NetheriteEnchantmentControlState
         enchantment!.id = enchantmentId;
       }
     }
+    // Resync the tier field to the (possibly new) enchantment — upstream
+    // re-reads the level on every updateUI().
+    _tierController.text = enchantment?.level.toString() ?? '';
     widget.saveChanges?.call();
     setState(() {});
   }

@@ -47,12 +47,15 @@ class MainWindowState extends State<MainWindow> {
 
   final GlobalKey<InventoryTabState> _inventoryTabKey = GlobalKey();
   final GlobalKey<ChestTabState> _chestTabKey = GlobalKey();
+  final GlobalKey<_TabsState> _tabsKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _model.showError = _showError;
     _checkForNewVersion();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _updateTitle());
   }
 
   // ---- menus ----
@@ -130,6 +133,7 @@ class MainWindowState extends State<MainWindow> {
   }
 
   void _updateTitle() {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
     final filePath = _profileModel.filePath;
     final title = filePath != null
         ? '${R.applicationTitle} - ${filePath.split(RegExp(r'[/\\]')).last}'
@@ -172,6 +176,14 @@ class MainWindowState extends State<MainWindow> {
     setState(() {});
   }
 
+  static Future<void> _close() async {
+    try {
+      await windowManager.destroy();
+    } catch (_) {
+      exit(0);
+    }
+  }
+
   void _onDropFile(DropDoneDetails details) {
     EventLogger.logEvent('window_File_Drop');
     if (details.files.isNotEmpty) {
@@ -209,15 +221,22 @@ class MainWindowState extends State<MainWindow> {
                 _saveFile();
               case _MenuAction.exit:
                 EventLogger.logEvent('exitCommandBinding_Executed');
-                exit(0);
+                EventLogger.dispose();
+                unawaited_(_close());
               case _MenuAction.delete:
-                // Only when focus isn't in a text field.
+                // Only when focus isn't in a text field, and only in the
+                // currently visible tab (upstream OnKeyUp else-if chain).
                 final focus = FocusManager.instance.primaryFocus;
                 final isTextField = focus?.context?.widget is EditableText ||
                     focus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
                 if (!isTextField) {
-                  _inventoryTabKey.currentState?.deleteCurrentSelectedItem();
-                  _chestTabKey.currentState?.deleteCurrentSelectedItem();
+                  switch (_tabsKey.currentState?.tabIndex) {
+                    case 0:
+                      _inventoryTabKey.currentState
+                          ?.deleteCurrentSelectedItem();
+                    case 2:
+                      _chestTabKey.currentState?.deleteCurrentSelectedItem();
+                  }
                 }
             }
             return null;
@@ -237,6 +256,7 @@ class MainWindowState extends State<MainWindow> {
                         child: PropertyBuilder(
                           properties: [_profileModel.profile],
                           builder: (context) => _Tabs(
+                            key: _tabsKey,
                             model: _model,
                             inventoryKey: _inventoryTabKey,
                             chestKey: _chestTabKey,
@@ -271,7 +291,7 @@ class MainWindowState extends State<MainWindow> {
         child: Row(
           children: [
             // File menu.
-            _menuButton('File', [
+            _menuButton(R.getString('File') ?? R.menuItemFile, [
               _menuEntry('Open...', () => _openFile(), hint: 'Ctrl+O'),
               _menuEntry('Save', hasFilePath ? _saveFile : null,
                   hint: 'Ctrl+S'),
@@ -280,10 +300,14 @@ class MainWindowState extends State<MainWindow> {
               if (_model.recentFiles.isEmpty)
                 const PopupMenuItem(enabled: false, child: Text('Recent Files')),
               for (final path in _model.recentFiles)
-                _menuEntry('Recent: ${path.split(RegExp(r'[/\\]')).last}',
+                _menuEntry(path.split(RegExp(r'[/\\]')).last,
                     () => handleFileOpenAsync(path)),
               const PopupMenuDivider(),
-              _menuEntry('Exit', () => exit(0), hint: 'Ctrl+Q'),
+              _menuEntry('Exit', () {
+                EventLogger.logEvent('exitCommandBinding_Executed');
+                EventLogger.dispose();
+                unawaited_(_close());
+              }, hint: 'Ctrl+Q'),
             ]),
             // Game Paks menu.
             _menuButton('Game Paks', [
@@ -310,7 +334,7 @@ class MainWindowState extends State<MainWindow> {
                 _langMenuEntry(_langDisplayName(lang), lang),
             ]),
             // About.
-            _menuButton('About', null, onPressed: () {
+            _menuButton(R.menuItemAbout, null, onPressed: () {
               EventLogger.logEvent('aboutMenuItem_Click');
               AboutWindow.show(context,
                   debug: const bool.fromEnvironment('DEBUG', defaultValue: false));
@@ -396,7 +420,8 @@ class MainWindowState extends State<MainWindow> {
 /// Tab row + bodies — recreated when the profile loads so tabs rebuild.
 class _Tabs extends StatefulWidget {
   const _Tabs(
-      {required this.model,
+      {super.key,
+      required this.model,
       required this.inventoryKey,
       required this.chestKey});
 
@@ -410,6 +435,8 @@ class _Tabs extends StatefulWidget {
 
 class _TabsState extends State<_Tabs> {
   int _tabIndex = 0;
+
+  int get tabIndex => _tabIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -464,6 +491,8 @@ class _TabsState extends State<_Tabs> {
     );
   }
 }
+
+void unawaited_(Future<void> f) {}
 
 enum _MenuAction { open, save, exit, delete }
 
