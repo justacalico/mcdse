@@ -16,4 +16,11 @@ class ArmorProperty {
   set rarity(Rarity v) => json['rarity'] = v.jsonName;
 
   ArmorProperty copy() => ArmorProperty.fromFields(id: id, rarity: rarity);
+
+  @override
+  bool operator ==(Object other) =>
+      other is ArmorProperty && identical(other.json, json);
+
+  @override
+  int get hashCode => identityHashCode(json);
 }

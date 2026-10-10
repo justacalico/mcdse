@@ -3,9 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcdse/data/profile_parser.dart';
 import 'package:mcdse/viewmodels/item_list_view_model.dart';
-import 'package:mcdse/data/models/profile_save_file.dart';
 import 'package:mcdse/data/models/item.dart';
-import 'package:mcdse/logic/extensions.dart';
 import 'package:mcdse/data/enums.dart';
 import 'package:mcdse/data/constants.dart';
 

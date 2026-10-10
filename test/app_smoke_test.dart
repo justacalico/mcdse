@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcdse/app_model.dart';
-import 'package:mcdse/data/constants.dart';
 import 'package:mcdse/main.dart';
 import 'package:mcdse/services/settings_store.dart';
 import 'package:mcdse/ui/windows/main_window.dart';

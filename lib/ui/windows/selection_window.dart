@@ -17,7 +17,6 @@ import '../widgets/item_control.dart';
 /// Returns the selected id via `Navigator.pop`.
 class SelectionWindow extends StatefulWidget {
   SelectionWindow._({
-    super.key,
     required this.title,
     required this.items,
     this.showFilterButtons = false,

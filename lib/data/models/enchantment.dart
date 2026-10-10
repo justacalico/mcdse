@@ -24,4 +24,14 @@ class Enchantment {
     // NOTE: upstream Copy() only copies Id and Level.
     return Enchantment.fromFields(id: id, level: level);
   }
+
+  // Two Enchantment wrappers are equal when they wrap the same JSON map —
+  // required because `Item.enchantments` rebuilds wrappers on each call and
+  // `indexOf`/`remove` in the view models rely on equality.
+  @override
+  bool operator ==(Object other) =>
+      other is Enchantment && identical(other.json, json);
+
+  @override
+  int get hashCode => identityHashCode(json);
 }

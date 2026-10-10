@@ -17,7 +17,7 @@ class GameFilesResult {
 /// no pak files were found, or after choosing "Relaunch to change".
 class GameFilesWindow extends StatefulWidget {
   const GameFilesWindow._(
-      {super.key, this.initialPath, required this.allowNoContent});
+      {this.initialPath, required this.allowNoContent});
 
   final String? initialPath;
   final bool allowNoContent;
