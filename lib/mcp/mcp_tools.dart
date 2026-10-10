@@ -103,7 +103,10 @@ void registerSaveTools(McpServer server, SaveSession session) {
   server.registerTool(
     'add_item',
     description:
-        'Add a new item. type is the game item id (e.g. "Sword", "Battlestaff", "Bow"). '
+        'Add a new item — validated against game data when the catalog is '
+        'loaded: type must exist, gear slots only accept matching categories, '
+        'enchant ids and armor properties are checked. Call game_catalog '
+        'first for valid ids. '
         'equipmentSlot: MeleeGear | ArmorGear | RangedGear | HotbarSlot1-3 (omit for inventory).',
     inputSchema: JsonSchema.object(
       properties: {
@@ -120,6 +123,11 @@ void registerSaveTools(McpServer server, SaveSession session) {
         'enchantments': JsonSchema.array(
             items: JsonSchema.object(
                 properties: const {}, additionalProperties: true)),
+        'netheriteEnchant': JsonSchema.object(
+            properties: const {}, additionalProperties: true),
+        'armorproperties': JsonSchema.array(
+            items: JsonSchema.object(
+                properties: const {}, additionalProperties: true)),
       },
       required: ['type'],
     ),
@@ -133,6 +141,12 @@ void registerSaveTools(McpServer server, SaveSession session) {
           upgraded: args['upgraded'] as bool?,
           gifted: args['gifted'] as bool?,
           enchantments: (args['enchantments'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
+              .toList(),
+          netheriteEnchant: args['netheriteEnchant'] != null
+              ? Map<String, dynamic>.from(args['netheriteEnchant'] as Map)
+              : null,
+          armorProperties: (args['armorproperties'] as List?)
               ?.map((e) => Map<String, dynamic>.from(e as Map))
               .toList(),
         )),

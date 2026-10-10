@@ -194,6 +194,101 @@ void main() {
     expect(calls, 10);
   });
 
+  group('catalog validation', () {
+    setUp(() {
+      ItemDatabase.all.addAll(['Axe', 'Sword', 'Bow', 'WitherArmor', 'FishingRod']);
+      ItemDatabase.meleeWeapons.addAll(['Axe', 'Sword']);
+      ItemDatabase.rangedWeapons.add('Bow');
+      ItemDatabase.armor.add('WitherArmor');
+      ItemDatabase.artifacts.add('FishingRod');
+      ItemDatabase.armorProperties.add('ChillingFocus');
+      EnchantmentDatabase.allEnchantments.addAll(['Sharpness', 'Chilling']);
+    });
+    tearDown(() {
+      ItemDatabase.all.clear();
+      ItemDatabase.meleeWeapons.clear();
+      ItemDatabase.rangedWeapons.clear();
+      ItemDatabase.armor.clear();
+      ItemDatabase.artifacts.clear();
+      ItemDatabase.armorProperties.clear();
+      EnchantmentDatabase.allEnchantments.clear();
+    });
+
+    test('rejects nonexistent item types', () async {
+      final s = SaveSession();
+      await s.open(jsonFile.path);
+      expect(() => s.addItem(type: 'NotARealSword'), throwsArgumentError);
+      expect(s.addItem(type: 'Axe')['type'], 'Axe');
+    });
+
+    test('rejects wrong-category equipment slots', () async {
+      final s = SaveSession();
+      await s.open(jsonFile.path);
+      expect(
+          () => s.addItem(type: 'Bow', equipmentSlot: 'MeleeGear'),
+          throwsArgumentError);
+      expect(() => s.addItem(type: 'Bow', equipmentSlot: 'NopeSlot'),
+          throwsArgumentError);
+      expect(s.addItem(type: 'Bow', equipmentSlot: 'RangedGear')['type'],
+          'Bow');
+    });
+
+    test('rejects bad rarity, power, enchants, armor properties', () async {
+      final s = SaveSession();
+      await s.open(jsonFile.path);
+      expect(() => s.addItem(type: 'Axe', rarity: 'Mythic'),
+          throwsArgumentError);
+      expect(() => s.addItem(type: 'Axe', power: 0), throwsArgumentError);
+      expect(
+          () => s.addItem(type: 'Axe', enchantments: [
+                {'id': 'FakeEnchant', 'level': 1}
+              ]),
+          throwsArgumentError);
+      expect(
+          () => s.addItem(type: 'Axe', enchantments: [
+                {'id': 'Sharpness', 'level': 9}
+              ]),
+          throwsArgumentError);
+      expect(
+          () => s.addItem(type: 'WitherArmor', armorProperties: [
+                {'id': 'FakeProp'}
+              ]),
+          throwsArgumentError);
+      // Valid forms pass.
+      s.addItem(type: 'Axe', enchantments: [
+        {'id': 'Sharpness', 'level': 3}
+      ], netheriteEnchant: {'id': 'Chilling', 'level': 1});
+      s.addItem(type: 'WitherArmor', armorProperties: [
+        {'id': 'ChillingFocus'}
+      ]);
+    });
+
+    test('update_item validates merged result', () async {
+      final s = SaveSession();
+      await s.open(jsonFile.path);
+      expect(() => s.updateItem(0, 'inventory', {'type': 'NotReal'}),
+          throwsArgumentError);
+      expect(() => s.updateItem(0, 'inventory', {'rarity': 'God'}),
+          throwsArgumentError);
+      expect(
+          () => s.updateItem(0, 'inventory', {
+                'enchantments': [
+                  {'id': 'Bogus', 'level': 1}
+                ]
+              }),
+          throwsArgumentError);
+      final ok = s.updateItem(0, 'inventory', {'type': 'Axe', 'rarity': 'Unique'});
+      expect(ok['type'], 'Axe');
+    });
+
+    test('level bounds enforced', () async {
+      final s = SaveSession();
+      await s.open(jsonFile.path);
+      expect(() => s.setLevel(0), throwsArgumentError);
+      expect(s.setLevel(999)['level'], 999);
+    });
+  });
+
   test('dump_profile_json returns full map', () async {
     final s = SaveSession();
     await s.open(jsonFile.path);

@@ -123,6 +123,40 @@ abstract final class Constants {
         .toList(growable: false);
   }
 
+  /// Every existing `Dungeons/Content/Paks` directory we can find — the
+  /// configured path, the standard install locations, and every Steam
+  /// library's `common` folder.
+  static List<String> detectedPakDirectories() {
+    final candidates = <String>{};
+    final configured = _settingsPakPath();
+    if (configured != null && configured.isNotEmpty) {
+      candidates.add(configured);
+    }
+    final env = Platform.environment['MCDSE_PAKS_PATH'];
+    if (env != null && env.isNotEmpty) candidates.add(env);
+    final pf86 = Platform.environment['ProgramFiles(x86)'] ??
+        Platform.environment['ProgramFiles'];
+    if (pf86 != null) {
+      candidates.add(
+          '$pf86/Steam/steamapps/common/MinecraftDungeons/Dungeons/Content/Paks');
+    }
+    final localAppData = Platform.environment['LOCALAPPDATA'];
+    if (localAppData != null) {
+      candidates.add(
+          '$localAppData/Mojang/products/dungeons/dungeons/Dungeons/Content/Paks');
+    }
+    candidates.add(
+        'C:/XboxGames/Minecraft Dungeons/Content/Dungeons/Content/Paks');
+    const suffix =
+        'steamapps/common/MinecraftDungeons/Dungeons/Content/Paks';
+    for (final lib in _steamLibraryFolders()) {
+      candidates.add('$lib/$suffix');
+    }
+    return candidates
+        .where((d) => Directory(d).existsSync())
+        .toList(growable: false);
+  }
+
   static String? _settingsPakPath() {
     try {
       return SettingsStore.getSetting(pakFileLocationKey, '');

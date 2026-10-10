@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import '../data/constants.dart';
 import '../data/enums.dart';
+import '../data/models/armor_property.dart';
 import '../data/models/enchantment.dart';
 import '../data/models/currency.dart';
 import '../data/models/item.dart';
@@ -138,6 +139,87 @@ class SaveSession {
     return items[index].json;
   }
 
+  /// Validates an item spec against the loaded game catalog. When no game
+  /// content is loaded (standalone server without paks) checks that don't
+  /// need the catalog still apply.
+  List<String> _itemErrors({
+    required String type,
+    String? equipmentSlot,
+    String? rarity,
+    double? power,
+    List<Map<String, dynamic>>? enchantments,
+    Map<String, dynamic>? netheriteEnchant,
+    List<Map<String, dynamic>>? armorProperties,
+  }) {
+    final errors = <String>[];
+    final hasCatalog = ItemDatabase.all.isNotEmpty;
+    if (hasCatalog && !ItemDatabase.all.contains(type)) {
+      errors.add('unknown item type "$type" — valid ids are in '
+          'game_catalog.itemTypes');
+    }
+    if (rarity != null && !Rarity.values.any((r) => r.jsonName == rarity)) {
+      errors.add('invalid rarity "$rarity" — use Common | Rare | Unique');
+    }
+    if (power != null && !(power > 0)) {
+      errors.add('power must be > 0, got $power');
+    }
+    if (equipmentSlot != null) {
+      final slot = EquipmentSlotEnum.values
+          .where((s) => s.jsonName == equipmentSlot)
+          .firstOrNull;
+      if (slot == null) {
+        errors.add('invalid equipmentSlot "$equipmentSlot" — valid slots '
+            'are in game_catalog.equipmentSlots');
+      } else if (hasCatalog) {
+        final fits = switch (slot) {
+          EquipmentSlotEnum.meleeGear =>
+            ItemDatabase.meleeWeapons.contains(type),
+          EquipmentSlotEnum.armorGear => ItemDatabase.armor.contains(type),
+          EquipmentSlotEnum.rangedGear =>
+            ItemDatabase.rangedWeapons.contains(type),
+          _ => ItemDatabase.artifacts.contains(type),
+        };
+        if (!fits) {
+          errors.add('"$type" cannot be equipped in $equipmentSlot');
+        }
+      }
+    }
+    void checkEnchant(Map<String, dynamic> e, String where) {
+      final id = e['id'] as String? ?? '';
+      final level = e['level'];
+      if (EnchantmentDatabase.allEnchantments.isNotEmpty &&
+          id != Constants.defaultEnchantmentId &&
+          !EnchantmentDatabase.allEnchantments.contains(id)) {
+        errors.add('unknown enchantment "$id" in $where — valid ids are '
+            'in game_catalog.enchantments');
+      }
+      if (level is num &&
+          (level < Constants.minimumEnchantmentTier ||
+              level > Constants.maximumEnchantmentTier)) {
+        errors.add('enchantment "$id" level $level out of range '
+            '(${Constants.minimumEnchantmentTier}–${Constants.maximumEnchantmentTier})');
+      }
+    }
+
+    enchantments?.forEach((e) => checkEnchant(e, 'enchantments'));
+    if (netheriteEnchant != null) {
+      checkEnchant(netheriteEnchant, 'netheriteEnchant');
+    }
+    if (armorProperties != null && ItemDatabase.armorProperties.isNotEmpty) {
+      for (final p in armorProperties) {
+        if (!ItemDatabase.armorProperties.contains(p['id'])) {
+          errors.add('unknown armor property "${p['id']}" — valid ids '
+              'are in game_catalog.armorProperties');
+        }
+      }
+    }
+    return errors;
+  }
+
+  void _throwIfErrors(List<String> errors) {
+    if (errors.isNotEmpty) throw ArgumentError(errors.join('; '));
+  }
+
   Map<String, dynamic> addItem({
     required String type,
     String location = 'inventory',
@@ -148,8 +230,22 @@ class SaveSession {
     bool? upgraded,
     bool? gifted,
     List<Map<String, dynamic>>? enchantments,
+    Map<String, dynamic>? netheriteEnchant,
+    List<Map<String, dynamic>>? armorProperties,
   }) {
     final items = _listFor(location);
+    if (items.length >= Constants.maximumInventoryItemCount) {
+      throw StateError('item list is full '
+          '(${Constants.maximumInventoryItemCount} max)');
+    }
+    _throwIfErrors(_itemErrors(
+        type: type,
+        equipmentSlot: equipmentSlot,
+        rarity: rarity,
+        power: power,
+        enchantments: enchantments,
+        netheriteEnchant: netheriteEnchant,
+        armorProperties: armorProperties));
     final nextIndex = items.isEmpty
         ? 0
         : items
@@ -166,6 +262,10 @@ class SaveSession {
       inventoryIndex: nextIndex,
       equipmentSlot: equipmentSlot,
       enchantments: enchantments?.map((e) => Enchantment(e)).toList(),
+      netheriteEnchant:
+          netheriteEnchant != null ? Enchantment(netheriteEnchant) : null,
+      armorProperties:
+          armorProperties?.map((p) => ArmorProperty(p)).toList(),
     );
     // Upstream addEquippedItem: adding to a gear slot evicts the previous
     // item holding that slot.
@@ -203,6 +303,23 @@ class SaveSession {
         throw ArgumentError('Unsupported item field: $key');
       }
     }
+    List<Map<String, dynamic>>? mapList(String key) =>
+        (fields[key] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+    _throwIfErrors(_itemErrors(
+      type: (fields['type'] as String?) ?? item.type,
+      equipmentSlot: fields.containsKey('equipmentSlot')
+          ? fields['equipmentSlot'] as String?
+          : item.equipmentSlot,
+      rarity: (fields['rarity'] as String?) ?? item.rarity.jsonName,
+      power: (fields['power'] as num?)?.toDouble(),
+      enchantments: mapList('enchantments'),
+      netheriteEnchant: fields.containsKey('netheriteEnchant')
+          ? Map<String, dynamic>.from(fields['netheriteEnchant'] as Map)
+          : null,
+      armorProperties: mapList('armorproperties'),
+    ));
     item.json.addAll(fields);
     _changed();
     return item.json;
@@ -210,6 +327,10 @@ class SaveSession {
 
   Map<String, dynamic> duplicateItem(int index, String location) {
     final items = _listFor(location);
+    if (items.length >= Constants.maximumInventoryItemCount) {
+      throw StateError('item list is full '
+          '(${Constants.maximumInventoryItemCount} max)');
+    }
     final item = _itemAt(index, location);
     final copy = item.copy();
     copy.inventoryIndex = items.isEmpty
@@ -269,6 +390,11 @@ class SaveSession {
 
   Map<String, dynamic> setLevel(int level) {
     _requireOpen();
+    if (level < Constants.minimumCharacterLevel ||
+        level > Constants.maximumCharacterLevel) {
+      throw ArgumentError(
+          'level must be ${Constants.minimumCharacterLevel}–${Constants.maximumCharacterLevel}');
+    }
     profile!.xp = GameCalculator.experienceForLevel(level);
     _changed();
     return {'level': GameCalculator.levelForExperience(profile!.xp), 'xp': profile!.xp};

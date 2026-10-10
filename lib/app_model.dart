@@ -82,7 +82,8 @@ class AppModel {
       throw StateError('PakIndex is null. Cannot Continue.');
     }
 
-    pakContentResolver = PakContentResolver(pakIndex, paksFolderPath);
+    pakContentResolver = PakContentResolver(pakIndex, paksFolderPath,
+        backupResolver: LocalContentResolver());
     pakContentResolver!.loadPakFiles(preloadBitmaps: false);
     ImageResolver.instance = pakContentResolver!;
     LanguageResolver.instance = pakContentResolver!;

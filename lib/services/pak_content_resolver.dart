@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
 import 'package:image/image.dart' as img;
 
 import '../data/constants.dart';
@@ -11,13 +11,15 @@ import '../pak/pak_package.dart';
 import 'content_resolver.dart';
 import 'databases.dart';
 import 'event_logger.dart';
-import 'local_content_resolver.dart';
 
 /// Ported from `PakContentResolver.cs` — discovers game content (icons,
 /// armor properties, enchantments, localizations) inside the pak index and
 /// extracts textures/strings on demand.
 class PakContentResolver extends IImageResolver implements ILanguageResolver {
-  PakContentResolver(this.pakIndex, this.path);
+  PakContentResolver(this.pakIndex, this.path, {this.backupResolver});
+
+  /// Optional fallback for images not found in paks (the app passes its
+  /// bundled-asset resolver; the standalone server passes none).
 
   static const Map<String, String> _mismatches = {
     // "Imagefile foldername" -> "Savefile reference"
@@ -66,7 +68,7 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
   @override
   final String? path;
 
-  final LocalContentResolver _backupResolver = LocalContentResolver();
+  final IImageResolver? backupResolver;
 
   final Map<String, String> _enchantments = {};
   final Map<String, String> _equipment = {};
@@ -82,7 +84,7 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
   /// Walk the file index once, cataloguing everything we care about.
   /// Equivalent to upstream `loadPakFiles`.
   void loadPakFiles({bool preloadBitmaps = false}) {
-    debugPrint('Loading Pak Files');
+    developer.log('Loading Pak Files');
     _levels.clear();
     for (final item in pakIndex.filePaths) {
       final startIndex = item.indexOf('//') + 1;
@@ -182,13 +184,13 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
       }
     }
 
-    debugPrint('Found ${_localizations.length} localizations');
-    debugPrint('Found ${_levels.length} levels');
-    debugPrint('Found ${ItemDatabase.armorProperties.length} armor properties');
-    debugPrint('Found ${_equipment.length} equipment images');
-    debugPrint('Found ${_enchantments.length} enchantment images');
+    developer.log('Found ${_localizations.length} localizations');
+    developer.log('Found ${_levels.length} levels');
+    developer.log('Found ${ItemDatabase.armorProperties.length} armor properties');
+    developer.log('Found ${_equipment.length} equipment images');
+    developer.log('Found ${_enchantments.length} enchantment images');
     if (preloadBitmaps) {
-      debugPrint('Preloaded ${_bitmaps.length} bitmaps');
+      developer.log('Preloaded ${_bitmaps.length} bitmaps');
     }
   }
 
@@ -223,7 +225,7 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
           stringLibrary[pair.key] = merged;
         }
       }
-      debugPrint('Loaded $totalStringCount strings from $langSpecifier LocRes');
+      developer.log('Loaded $totalStringCount strings from $langSpecifier LocRes');
     }
     return stringLibrary;
   }
@@ -299,7 +301,7 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
       if (image != null) return image;
     }
     EventLogger.logError('Could not find full path for item $itemType');
-    return _backupResolver.imageSourceForItemType(itemType);
+    return backupResolver?.imageSourceForItemType(itemType);
   }
 
   @override
@@ -329,6 +331,6 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
       if (image != null) return image;
     }
     EventLogger.logError('Could not find full path for enchantment $enchantmentId');
-    return _backupResolver.imageSourceForEnchantmentId(enchantmentId);
+    return backupResolver?.imageSourceForEnchantmentId(enchantmentId);
   }
 }
