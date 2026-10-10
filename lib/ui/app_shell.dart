@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -153,6 +154,75 @@ class AppShellState extends State<AppShell> {
     try {
       windowManager.setTitle(R.applicationTitle);
     } catch (_) {}
+    // If no save was opened via argv, offer the detected save files.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybePromptSaveFile());
+  }
+
+  Future<void> _maybePromptSaveFile() async {
+    if (!mounted ||
+        _model.mainModel.profileModel.profile.value != null ||
+        Platform.environment['FLUTTER_TEST'] == 'true') {
+      return;
+    }
+    final saves = Constants.detectedSaveFiles();
+    if (saves.isEmpty) return;
+    String fmtDate(DateTime t) {
+      final l = t.toLocal();
+      String two(int v) => v.toString().padLeft(2, '0');
+      return '${l.year}-${two(l.month)}-${two(l.day)} '
+          '${two(l.hour)}:${two(l.minute)}';
+    }
+
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Open a save file'),
+        titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 380),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final f in saves)
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.insert_drive_file_outlined),
+                    title: Text(f.path.split(RegExp(r'[/\\]')).last),
+                    subtitle: Text(
+                      f.parent.path,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    trailing: Text(fmtDate(f.lastModifiedSync()),
+                        style: const TextStyle(fontSize: 11)),
+                    onTap: () => Navigator.of(ctx).pop(f.path),
+                  ),
+                const Divider(height: 1),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.folder_open),
+                  title: const Text('Browse for a file…'),
+                  onTap: () => Navigator.of(ctx).pop(''),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    if (picked.isEmpty) {
+      final file = await openFile(acceptedTypeGroups: const [
+        XTypeGroup(label: 'Save files', extensions: ['dat', 'json'])
+      ]);
+      if (file == null) return;
+      await _model.mainModel.handleFileOpenAsync(file.path);
+      return;
+    }
+    await _model.mainModel.handleFileOpenAsync(picked);
   }
 
   void _onRelaunch() {

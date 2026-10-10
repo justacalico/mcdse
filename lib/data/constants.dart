@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'enums.dart';
 import 'models/item.dart';
+import '../services/settings_store.dart';
 
 /// Constants ported from MCDSaveEdit's `Data/Constants/*`.
 abstract final class Constants {
@@ -76,6 +77,10 @@ abstract final class Constants {
 
   /// NOTE: default location of save game files.
   static String get fileDialogInitialDirectory {
+    // Prefer a save directory that actually exists (handles Proton/Steam
+    // installs where saves live inside the compatdata prefix).
+    final detected = detectedSaveDirectories();
+    if (detected.isNotEmpty) return detected.first;
     final userFolderPath = Platform.environment['USERPROFILE'] ??
         Platform.environment['HOME'] ??
         '';
@@ -83,6 +88,109 @@ abstract final class Constants {
       return '$userFolderPath\\Saved Games\\Mojang Studios\\Dungeons';
     }
     return '$userFolderPath/Saved Games/Mojang Studios/Dungeons';
+  }
+
+  static const int mcdSteamAppId = 1672970;
+
+  /// Every existing `Saved Games/Mojang Studios/Dungeons` directory we can
+  /// find — native, Launcher, and Steam/Proton (inside compatdata prefixes
+  /// across all Steam libraries).
+  static List<String> detectedSaveDirectories() {
+    final candidates = <String>{};
+    final home = Platform.environment['USERPROFILE'] ??
+        Platform.environment['HOME'] ??
+        '';
+    if (home.isNotEmpty) {
+      candidates.add(
+          '$home${Platform.isWindows ? '\\' : '/'}Saved Games${Platform.isWindows ? '\\' : '/'}Mojang Studios${Platform.isWindows ? '\\' : '/'}Dungeons');
+    }
+    const suffix = 'steamapps/compatdata/$mcdSteamAppId/pfx/drive_c/'
+        'users/steamuser/Saved Games/Mojang Studios/Dungeons';
+    for (final lib in _steamLibraryFolders()) {
+      candidates.add('$lib/$suffix');
+    }
+    // The picked pak folder reveals the steamapps root — compatdata sits
+    // next to common/.
+    final paksPath = _settingsPakPath();
+    if (paksPath != null && paksPath.contains('steamapps/common')) {
+      final steamapps =
+          paksPath.substring(0, paksPath.indexOf('steamapps/common') + 9);
+      candidates.add('$steamapps/compatdata/$mcdSteamAppId/pfx/drive_c/'
+          'users/steamuser/Saved Games/Mojang Studios/Dungeons');
+    }
+    return candidates
+        .where((d) => Directory(d).existsSync())
+        .toList(growable: false);
+  }
+
+  static String? _settingsPakPath() {
+    try {
+      return SettingsStore.getSetting(pakFileLocationKey, '');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Steam library roots: well-known install dirs plus every `"path"` entry
+  /// in each `steamapps/libraryfolders.vdf`.
+  static Set<String> _steamLibraryFolders() {
+    final home = Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ??
+        '';
+    final roots = <String>{
+      if (home.isNotEmpty) ...[
+        '$home/.steam/steam',
+        '$home/.steam/debian-installation',
+        '$home/.local/share/Steam',
+        '$home/snap/steam/common/.steam/steam',
+        '$home/.var/app/com.valvesoftware.Steam/.steam/steam',
+        '$home/.var/app/com.valvesoftware.Steam/.local/share/Steam',
+      ],
+      '/mnt/SteamLibrary',
+    };
+    final libs = {...roots};
+    final pathRe = RegExp(r'"path"\s+"([^"]+)"');
+    for (final root in roots) {
+      try {
+        final vdf = File('$root/steamapps/libraryfolders.vdf');
+        if (vdf.existsSync()) {
+          for (final m in pathRe.allMatches(vdf.readAsStringSync())) {
+            libs.add(m.group(1)!.replaceAll('\\\\', '/'));
+          }
+        }
+      } catch (_) {}
+    }
+    return libs;
+  }
+
+  /// Save .dat files found inside the detected save directories —
+  /// `savefile.dat` plus every `*/Characters/*.dat` — newest first.
+  static List<File> detectedSaveFiles() {
+    final files = <File>[];
+    for (final dir in detectedSaveDirectories()) {
+      for (final entity in Directory(dir).listSync()) {
+        if (entity is File && entity.path.endsWith('.dat')) {
+          files.add(entity);
+        } else if (entity is Directory) {
+          // Account folders hold savefile.dat + a Characters/ subdir.
+          files.addAll(entity
+              .listSync()
+              .whereType<File>()
+              .where((f) => f.path.endsWith('.dat')));
+          final chars = Directory('${entity.path}/Characters');
+          if (chars.existsSync()) {
+            files.addAll(chars
+                .listSync()
+                .whereType<File>()
+                .where((f) => f.path.endsWith('.dat')));
+          }
+        }
+      }
+    }
+    files.sort((a, b) => b
+        .lastModifiedSync()
+        .compareTo(a.lastModifiedSync()));
+    return files;
   }
 
   static const String encryptedFileExtension = '.dat';
