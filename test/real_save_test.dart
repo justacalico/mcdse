@@ -4,11 +4,14 @@ import 'package:mcdse/logic/file_process_helper.dart';
 import 'package:mcdse/data/profile_parser.dart';
 import 'package:mcdse/logic/extensions.dart';
 
+const _realSave =
+    '/mnt/FuckBTRFS/SteamLibrary/steamapps/compatdata/1672970/pfx/drive_c/users/steamuser/Saved Games/Mojang Studios/Dungeons/2535446877323841/Characters/E0E9D56B464E7BB914E79991DB607E49.dat';
+final _hasRealSave = File(_realSave).existsSync();
+
 void main() {
   test('real save decrypt+parse', () async {
-    final data = await FileProcessHelper.decrypt(File(
-        '/mnt/FuckBTRFS/SteamLibrary/steamapps/compatdata/1672970/pfx/drive_c/users/steamuser/Saved Games/Mojang Studios/Dungeons/2535446877323841/Characters/E0E9D56B464E7BB914E79991DB607E49.dat')
-        .readAsBytesSync());
+    final data = await FileProcessHelper.decrypt(
+        File(_realSave).readAsBytesSync());
     expect(data, isNotNull);
     final save = ProfileParser.read(data!);
     expect(save, isNotNull);
@@ -20,5 +23,5 @@ void main() {
     }
     print('currencies: ${s.currency?.map((c)=>"${c.type}=${c.count}").toList()}');
     print('difficulties: ${s.json.keys.toList().take(20)}');
-  });
+  }, skip: !_hasRealSave);
 }

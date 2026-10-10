@@ -12,7 +12,7 @@ default:
 
 variables:
   FF_DISABLE_GPU: "true"
-  FLUTTER_VERSION: "3.47.7"
+  FLUTTER_VERSION: "3.47.6"
   FLUTTER_HOME: "$CI_PROJECT_DIR/.flutter-sdk"
 
 cache:

@@ -13,7 +13,7 @@ import 'package:mcdse/ui/screens/equipment_screen.dart';
 import 'package:mcdse/ui/screens/item_screen.dart';
 
 const _blankDat =
-    '/mnt/other/devinoruim-projects/MCDSaveEdit-upstream/MCDSaveEditTests/TestData/Blank.dat';
+    'test/data/Blank.dat';
 
 void main() {
   setUpAll(() {

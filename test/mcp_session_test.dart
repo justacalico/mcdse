@@ -6,7 +6,7 @@ import 'package:mcdse/mcp/save_session.dart';
 import 'package:mcdse/services/databases.dart';
 
 const _blankDat =
-    '/mnt/other/devinoruim-projects/MCDSaveEdit-upstream/MCDSaveEditTests/TestData/Blank.dat';
+    'test/data/Blank.dat';
 
 Directory _tmpDir() => Directory.systemTemp.createTempSync('mcdse_mcp_test');
 
