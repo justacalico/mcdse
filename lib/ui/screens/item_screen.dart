@@ -480,8 +480,14 @@ class ItemScreenState extends State<ItemScreen> {
                 Row(
                   children: [
                     SizedBox(
-                      width: 65,
+                      width: 70,
+                      height: 30,
                       child: TextButton(
+                        style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap),
                         onPressed: hasItem
                             ? () {
                                 EventLogger.logEvent(
@@ -490,13 +496,22 @@ class ItemScreenState extends State<ItemScreen> {
                                 widget.duplicateItem?.call(item.copy());
                               }
                             : null,
-                        child: Text(R.duplicate,
-                            style: const TextStyle(fontSize: 12)),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(R.duplicate,
+                              style: const TextStyle(fontSize: 12)),
+                        ),
                       ),
                     ),
                     SizedBox(
-                      width: 65,
+                      width: 70,
+                      height: 30,
                       child: TextButton(
+                        style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap),
                         onPressed: hasItem
                             ? () {
                                 EventLogger.logEvent('deleteItemButton_Click',
@@ -504,9 +519,12 @@ class ItemScreenState extends State<ItemScreen> {
                                 widget.deleteItem?.call(item);
                               }
                             : null,
-                        child: Text(
-                            R.getString('Delete_Nav_Button') ?? R.delete,
-                            style: const TextStyle(fontSize: 12)),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                              R.getString('Delete_Nav_Button') ?? R.delete,
+                              style: const TextStyle(fontSize: 12)),
+                        ),
                       ),
                     ),
                   ],
@@ -544,12 +562,7 @@ class ItemScreenState extends State<ItemScreen> {
   List<Widget> _moveButtons(Item? item) {
     final loc = widget.itemLocation;
     if (item == null || loc == null) {
-      return [
-        const SizedBox(
-          width: 150,
-          child: TextButton(onPressed: null, child: Text('-')),
-        )
-      ];
+      return const [SizedBox.shrink()];
     }
     String label;
     VoidCallback? onPressed;
