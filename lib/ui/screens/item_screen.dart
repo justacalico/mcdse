@@ -269,7 +269,10 @@ class ItemScreenState extends State<ItemScreen> {
         onPressed: hasItem ? onTap : null,
         icon: Icon(checked ? Icons.check_box : Icons.check_box_outline_blank,
             size: 16),
-        label: Text(label),
+        label: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(label)),
         style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 5)),
       ),
@@ -322,7 +325,9 @@ class ItemScreenState extends State<ItemScreen> {
                           onDown: hasItem ? () => _stepPower(-1) : null,
                         ),
                         const SizedBox(width: 10),
-                        DropdownButton<Rarity>(
+                        Expanded(
+                          child: DropdownButton<Rarity>(
+                          isExpanded: true,
                           value: item?.rarity,
                           onChanged: hasItem ? _onRarityChanged : null,
                           items: [
@@ -339,27 +344,31 @@ class ItemScreenState extends State<ItemScreen> {
                                 child: Text(
                                     R.getString('rarity_unique') ?? R.unique)),
                           ],
+                          ),
                         ),
                       ],
                     ),
-                    // Flag row.
+                    // Flag row — checkboxes shrink to fit narrow windows.
                     Padding(
                       padding: const EdgeInsets.only(top: 5),
                       child: Row(
                         children: [
-                          _flagCheckbox(
-                              R.getString('Interest_New') ?? R.new_,
-                              item?.markedNew == true,
-                              _toggleMarkedNew),
-                          _flagCheckbox(
-                              R.getString('item_diamond_dust_upgraded') ??
-                                  R.upgraded,
-                              item?.upgraded == true,
-                              _toggleUpgraded),
-                          _flagCheckbox(
-                              R.getString('item_gifted') ?? R.gifted,
-                              item?.gifted == true,
-                              _toggleGifted),
+                          Expanded(
+                            child: _flagCheckbox(
+                                R.getString('Interest_New') ?? R.new_,
+                                item?.markedNew == true,
+                                _toggleMarkedNew)),
+                          Expanded(
+                            child: _flagCheckbox(
+                                R.getString('item_diamond_dust_upgraded') ??
+                                    R.upgraded,
+                                item?.upgraded == true,
+                                _toggleUpgraded)),
+                          Expanded(
+                            child: _flagCheckbox(
+                                R.getString('item_gifted') ?? R.gifted,
+                                item?.gifted == true,
+                                _toggleGifted)),
                         ],
                       ),
                     ),
@@ -457,7 +466,9 @@ class ItemScreenState extends State<ItemScreen> {
               ),
             ),
             // Item image button + action buttons.
-            Column(
+            SizedBox(
+              width: 190,
+              child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -532,6 +543,7 @@ class ItemScreenState extends State<ItemScreen> {
                 const SizedBox(height: 26),
                 ..._moveButtons(item),
               ],
+            ),
             ),
           ],
         ),

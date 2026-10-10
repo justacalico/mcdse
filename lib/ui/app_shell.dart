@@ -176,15 +176,22 @@ class AppShellState extends State<AppShell> {
 
     final picked = await showDialog<String>(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('Open a save file'),
-        titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 380),
-            child: ListView(
-              shrinkWrap: true,
-              children: [
+      builder: (ctx) => Dialog(
+        child: SizedBox(
+          width: 520,
+          height: 420,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+                child: Text('Open a save file',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+              ),
+              Expanded(
+                child: ListView(
+                  children: [
                 for (final f in saves)
                   ListTile(
                     dense: true,
@@ -200,17 +207,19 @@ class AppShellState extends State<AppShell> {
                         style: const TextStyle(fontSize: 11)),
                     onTap: () => Navigator.of(ctx).pop(f.path),
                   ),
-                const Divider(height: 1),
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.folder_open),
-                  title: const Text('Browse for a file…'),
-                  onTap: () => Navigator.of(ctx).pop(''),
+                    const Divider(height: 1),
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.folder_open),
+                      title: const Text('Browse for a file…'),
+                      onTap: () => Navigator.of(ctx).pop(''),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
     if (picked == null || !mounted) return;
