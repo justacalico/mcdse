@@ -79,3 +79,4 @@ test/goldens/failures/
 /mcpb/build/
 /mcpb/server/
 *.mcpb
+.flutter-sdk/
