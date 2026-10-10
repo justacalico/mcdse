@@ -1,16 +1,3 @@
-spec:
-  inputs:
-    build_all:
-      type: boolean
-      default: true
-      description: 'Build all targets (linux, linux-arm64, windows, windows-arm64, macos)'
-    create_release:
-      type: boolean
-      default: false
-      description: 'Create a versioned release'
-
----
-
 stages:
   - sync
   - release
@@ -90,8 +77,8 @@ github-dispatch:
     - sh scripts/setup-ssh-key.sh GITHUB_SSH_PRIVATE_KEY github.com
   script:
     - |
-      BUILD_ALL="$[[ inputs.build_all ]]"
-      CREATE_RELEASE="$[[ inputs.create_release ]]"
+      BUILD_ALL="${BUILD_ALL:-true}"
+      CREATE_RELEASE="${CREATE_RELEASE:-false}"
       if [ "$CREATE_RELEASE" = "true" ]; then
         BUILD_ALL="true"
       fi
