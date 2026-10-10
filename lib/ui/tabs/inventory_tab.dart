@@ -71,26 +71,43 @@ class InventoryTabState extends State<InventoryTab> {
     final icon = AppModel.gameContentLoaded
         ? ImageResolver.instance.imageSource(pakImagePath)
         : null;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: icon != null
-              ? Image.memory(icon, height: 22)
-              : Image.asset('assets/images/$assetName', height: 22),
-        ),
+    return SizedBox(
+      height: 30,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Fixed slot so every icon lines up regardless of aspect ratio.
+          SizedBox(
+            width: 38,
+            height: 30,
+            child: Center(
+              child: SizedBox(
+                height: 20,
+                child: icon != null
+                    ? Image.memory(icon, fit: BoxFit.contain)
+                    : Image.asset('assets/images/$assetName',
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            const SizedBox.shrink()),
+              ),
+            ),
+          ),
         if (currentValue == null)
           // Upstream `*AddButton` — creates the currency entry with 0.
           SizedBox(
             width: 100,
             height: 22,
-            child: TextButton(
-              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
               onPressed: _model.profile.value != null
                   ? () => setter(0)
                   : null,
-              child: const Text('+'),
+              child: const Center(
+                  child: Text('+', style: TextStyle(fontSize: 13, height: 1))),
             ),
           )
         else
@@ -123,7 +140,8 @@ class InventoryTabState extends State<InventoryTab> {
             },
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -176,6 +194,7 @@ class InventoryTabState extends State<InventoryTab> {
                 SizedBox(
                   height: 30,
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       _currencyField(
                           'emeralds',
@@ -200,37 +219,51 @@ class InventoryTabState extends State<InventoryTab> {
                           _model.eyeOfEnder.value),
                       if (showUnlockPortal)
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 4),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 4),
                           child: Tooltip(
                             message:
                                 'Unlocking the ability to insert eyes of ender in stronghold',
                             child: TextButton(
+                              style: TextButton.styleFrom(
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  padding:
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2)),
                               onPressed: hasProfile
                                   ? () =>
                                       _model.unlockPortal.setValue = true
                                   : null,
-                              child: const Text('Unlock Portal'),
+                              child: const Text('Unlock Portal',
+                                  style: TextStyle(fontSize: 13)),
                             ),
                           ),
                         ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        child: ImageResolver.instance
-                                    .imageSource(
-                                        '/Dungeons/Content/UI/Materials/Inventory2/Enchantment/enchantscore_background') !=
-                                null
-                            ? Image.memory(
-                                ImageResolver.instance.imageSource(
-                                    '/Dungeons/Content/UI/Materials/Inventory2/Enchantment/enchantscore_background')!,
-                                height: 22)
-                            : Image.asset('assets/images/Points.png',
-                                height: 22),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 8),
+                        child: SizedBox(
+                          height: 20,
+                          child: ImageResolver.instance
+                                      .imageSource(
+                                          '/Dungeons/Content/UI/Materials/Inventory2/Enchantment/enchantscore_background') !=
+                                  null
+                              ? Image.memory(
+                                  ImageResolver.instance.imageSource(
+                                      '/Dungeons/Content/UI/Materials/Inventory2/Enchantment/enchantscore_background')!,
+                                  fit: BoxFit.contain)
+                              : Image.asset('assets/images/Points.png',
+                                  fit: BoxFit.contain),
+                        ),
                       ),
-                      Text(
-                        '${_equipmentModel.remainingEnchantmentPoints.value ?? ''}',
-                        style: const TextStyle(fontSize: 14),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          '${_equipmentModel.remainingEnchantmentPoints.value ?? ''}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
                       ),
                     ],
                   ),

@@ -130,9 +130,13 @@ class ItemListScreen extends StatelessWidget {
           onPressed: enabled ? () => _setFilter(filter, event) : null,
           child: icon != null
               ? Image.memory(icon, fit: BoxFit.contain)
-              : Text(label,
-                  style: const TextStyle(fontSize: 11),
-                  textAlign: TextAlign.center),
+              : FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(label,
+                      style: const TextStyle(fontSize: 11),
+                      softWrap: false,
+                      textAlign: TextAlign.center),
+                ),
         ),
       ),
     );
