@@ -9,6 +9,8 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../app_model.dart';
 import '../../data/constants.dart';
+import '../../mcp/mcp_host.dart';
+import '../../mcp/mcpb_exporter.dart';
 import '../../services/config.dart';
 import '../../theme.dart';
 import '../../services/event_logger.dart';
@@ -107,6 +109,32 @@ class MainWindowState extends State<MainWindow> {
   Future<void> _saveFile() async {
     EventLogger.logEvent('saveCommandBinding_Executed');
     await handleFileSaveAsync(_profileModel.filePath);
+  }
+
+  Future<void> _toggleMcpServer() async {
+    EventLogger.logEvent('mcpServerMenuItem_Click',
+        {'enabled': (!McpHost.enabled).toString()});
+    await McpHost.setEnabled(!McpHost.enabled);
+    setState(() {});
+  }
+
+  Future<void> _exportMcpb() async {
+    EventLogger.logEvent('exportMcpbMenuItem_Click');
+    final loc = await getSaveLocation(
+        suggestedName: 'mcdse.mcpb',
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'MCP bundle', extensions: ['mcpb'])
+        ]);
+    if (loc == null) return;
+    try {
+      await McpbExporter.export(loc.path);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Exported ${loc.path}')));
+    } catch (e) {
+      if (!mounted) return;
+      _showError('$e');
+    }
   }
 
   Future<void> handleFileOpenAsync(String? fileName) async {
@@ -340,6 +368,27 @@ class MainWindowState extends State<MainWindow> {
               _themeMenuEntry('Light', AppTheme.light),
               _themeMenuEntry('Dark', AppTheme.dark),
               _themeMenuEntry('OLED', AppTheme.oled),
+            ]),
+            // MCP menu — AI agent access to the open save.
+            _menuButton('MCP', [
+              PopupMenuItem(
+                onTap: () => _toggleMcpServer(),
+                child: Row(
+                  children: [
+                    if (McpHost.enabled) const Icon(Icons.check, size: 16),
+                    if (McpHost.enabled) const SizedBox(width: 4),
+                    const Text('Enable MCP server'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                enabled: false,
+                child: Text(McpHost.running
+                    ? McpHost.endpoint
+                    : 'Server stopped — port ${McpHost.configuredPort}'),
+              ),
+              const PopupMenuDivider(),
+              _menuEntry('Export .mcpb bundle…', () => _exportMcpb()),
             ]),
             // About.
             _menuButton(R.menuItemAbout, null, onPressed: () {

@@ -59,11 +59,18 @@ the compiled binary directly:
 dart build cli -t bin/mcp_server.dart -o build/mcp   # → build/mcp/bundle/bin/mcp_server
 ```
 
-Tools: `detect_save_files`, `open_save`, `save_info`,
+Tools: `game_catalog` (all item/enchantment/armor-property ids + rules — call first), `detect_save_files`, `open_save`, `save_info`,
 `dump_profile_json`, `list_items`, `get_item`, `add_item`,
 `update_item`, `duplicate_item`, `move_item`, `remove_item`,
 `set_currency`, `set_level`, `set_xp`, `save`. Writes stay in memory
 until `save` is called; `.dat` writes encrypted, `.json` decrypted.
+
+The **MCP** menu in the app can also host the same tools in-process:
+**MCP → Enable MCP server** starts a Streamable HTTP endpoint at
+`http://127.0.0.1:8756/mcp` (persisted, loopback only). Whatever an
+agent does through it shows up live in the UI, and files opened in the
+UI are mirrored to the agent session. **MCP → Export .mcpb bundle…**
+writes an installable bundle to a path you pick.
 
 ## Testing
 

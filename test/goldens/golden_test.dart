@@ -82,6 +82,18 @@ Future<void> _openBlankSave(WidgetTester tester, AppModel appModel) async {
   });
 }
 
+/// Lets real async work (image decoding, file IO) finish before capture —
+/// pumpAndSettle alone only drains scheduled frames, so icons can land
+/// mid-decode and flake the comparison.
+Future<void> _settle(WidgetTester tester) async {
+  await tester.runAsync(() async {
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    await tester.pump();
+  });
+}
+
 Widget _themed(Widget child, {AppTheme theme = AppTheme.dark}) {
   return MaterialApp(
     theme: buildThemeData(theme),
@@ -116,7 +128,7 @@ void main() {
       ),
     )));
     await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(
         find.byType(GameFilesWindow), matchesGoldenFile('goldens/game_files_dialog.png'));
   });
@@ -125,7 +137,7 @@ void main() {
     await _setSurface(tester);
     final appModel = await _bootApp(tester);
     await _openBlankSave(tester, appModel);
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(
         find.byType(MaterialApp), matchesGoldenFile('goldens/main_window_dark.png'));
   });
@@ -136,7 +148,7 @@ void main() {
     addTearDown(() => ThemeController.theme.setValue = AppTheme.dark);
     final appModel = await _bootApp(tester);
     await _openBlankSave(tester, appModel);
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(
         find.byType(MaterialApp), matchesGoldenFile('goldens/main_window_light.png'));
   });
@@ -147,7 +159,7 @@ void main() {
     addTearDown(() => ThemeController.theme.setValue = AppTheme.dark);
     final appModel = await _bootApp(tester);
     await _openBlankSave(tester, appModel);
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(
         find.byType(MaterialApp), matchesGoldenFile('goldens/main_window_oled.png'));
   });
@@ -166,7 +178,7 @@ void main() {
     );
     equipment.addItemToList(item);
     equipment.selectItem(item);
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(find.byType(MaterialApp),
         matchesGoldenFile('goldens/inventory_item_selected.png'));
   });
@@ -176,7 +188,7 @@ void main() {
     final appModel = await _bootApp(tester);
     await _openBlankSave(tester, appModel);
     await tester.tap(find.text('Stats/Counters'));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(
         find.byType(MaterialApp), matchesGoldenFile('goldens/stats_tab.png'));
   });
@@ -186,7 +198,7 @@ void main() {
     final appModel = await _bootApp(tester);
     await _openBlankSave(tester, appModel);
     await tester.tap(find.text('Chest'));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(
         find.byType(MaterialApp), matchesGoldenFile('goldens/chest_tab.png'));
   });
@@ -202,7 +214,7 @@ void main() {
       ),
     )));
     await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(
         find.byType(AlertDialog), matchesGoldenFile('goldens/about_dialog.png'));
   });
@@ -219,7 +231,7 @@ void main() {
     addTearDown(() => dir.deleteSync(recursive: true));
 
     await tester.pumpWidget(_themed(SavePickerDialog(saves: [f1, f2])));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(find.byType(SavePickerDialog),
         matchesGoldenFile('goldens/save_picker_dialog.png'));
   });
@@ -234,7 +246,7 @@ void main() {
         child: EnchantmentScreen(enchantment: enchant, isGilded: false),
       ),
     )));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(find.byType(EnchantmentScreen),
         matchesGoldenFile('goldens/enchantment_screen.png'));
   });
@@ -250,7 +262,7 @@ void main() {
       ),
     )));
     await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+    await _settle(tester);
     await expectLater(find.byType(SelectionWindow),
         matchesGoldenFile('goldens/selection_window.png'));
   });

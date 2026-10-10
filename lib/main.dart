@@ -5,6 +5,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app_model.dart';
 import 'data/constants.dart';
+import 'mcp/mcp_host.dart';
 import 'theme.dart';
 import 'services/encryption.dart';
 import 'services/event_logger.dart';
@@ -19,6 +20,7 @@ Future<void> main(List<String> args) async {
 
   ThemeController.init();
   EventLogger.init();
+  unawaited(McpHost.initFromSettings());
 
   if (!Platform.environment.containsKey('FLUTTER_TEST') &&
       (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {

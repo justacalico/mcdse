@@ -12,7 +12,9 @@ import '../data/profile_parser.dart';
 import '../logic/extensions.dart';
 import '../logic/file_process_helper.dart';
 import '../logic/game_calculator.dart';
+import '../services/databases.dart';
 import '../services/save_file_handler.dart';
+import '../services/string_library.dart';
 
 /// Single-save session backing the MCP server tools. All read methods return
 /// JSON-friendly maps/lists; mutation methods mutate the in-memory profile
@@ -21,7 +23,13 @@ class SaveSession {
   String? filePath;
   ProfileSaveFile? profile;
 
+  /// Fired after [open] and every successful mutation / [save] — the app
+  /// host uses it to refresh the UI.
+  void Function()? onChanged;
+
   bool get isOpen => profile != null;
+
+  void _changed() => onChanged?.call();
 
   void _requireOpen() {
     if (profile == null) {
@@ -58,6 +66,7 @@ class SaveSession {
     }
     filePath = path;
     profile = parsed;
+    _changed();
     return info();
   }
 
@@ -165,6 +174,7 @@ class SaveSession {
     }
     items.add(item);
     _commit(location, items);
+    _changed();
     return {'index': items.length - 1, ...item.json};
   }
 
@@ -194,6 +204,7 @@ class SaveSession {
       }
     }
     item.json.addAll(fields);
+    _changed();
     return item.json;
   }
 
@@ -206,6 +217,7 @@ class SaveSession {
         : items.map((i) => i.inventoryIndex ?? 0).reduce((a, b) => a > b ? a : b) + 1;
     items.add(copy);
     _commit(location, items);
+    _changed();
     return {'index': items.length - 1, ...copy.json};
   }
 
@@ -218,6 +230,7 @@ class SaveSession {
     to.add(item);
     _commit(location, from);
     _commit(location == 'inventory' ? 'chest' : 'inventory', to);
+    _changed();
     final movedTo = location == 'inventory' ? 'chest' : 'inventory';
     return {'movedTo': movedTo, 'index': to.length - 1, ...item.json};
   }
@@ -226,6 +239,7 @@ class SaveSession {
     final items = _listFor(location);
     items.remove(_itemAt(index, location));
     _commit(location, items);
+    _changed();
   }
 
   Item _itemAt(int index, String location) {
@@ -242,24 +256,28 @@ class SaveSession {
     for (final c in currencies) {
       if (c.type.toLowerCase() == type.toLowerCase()) {
         c.count = count;
+        _changed();
         return c.json;
       }
     }
     final created = Currency.fromFields(count: count, type: type);
     currencies.add(created);
     profile!.currency = currencies;
+    _changed();
     return created.json;
   }
 
   Map<String, dynamic> setLevel(int level) {
     _requireOpen();
     profile!.xp = GameCalculator.experienceForLevel(level);
+    _changed();
     return {'level': GameCalculator.levelForExperience(profile!.xp), 'xp': profile!.xp};
   }
 
   Map<String, dynamic> setXp(int xp) {
     _requireOpen();
     profile!.xp = xp;
+    _changed();
     return {'level': GameCalculator.levelForExperience(xp), 'xp': xp};
   }
 
@@ -281,7 +299,82 @@ class SaveSession {
       await File(target).writeAsBytes(processed);
     }
     filePath = target;
+    _changed();
     return {'written': target, 'bytes': File(target).lengthSync()};
+  }
+
+  /// Complete editing reference — every valid id, enum value, limit, and
+  /// save-format rule an agent needs. Populated when the server runs inside
+  /// the app (game content loaded from paks); empty lists otherwise.
+  Map<String, dynamic> catalog() {
+    List<String> sorted(Set<String> s) => s.toList()..sort();
+    return {
+      'gameContentLoaded': ItemDatabase.all.isNotEmpty,
+      'itemTypes': {
+        'melee': sorted(ItemDatabase.meleeWeapons),
+        'ranged': sorted(ItemDatabase.rangedWeapons),
+        'armor': sorted(ItemDatabase.armor),
+        'artifacts': sorted(ItemDatabase.artifacts),
+      },
+      'enchantments': [
+        for (final id in sorted(EnchantmentDatabase.allEnchantments))
+          {
+            'id': id,
+            'name': R.enchantmentName(id),
+            'powerful': Constants.powerful.contains(id),
+          },
+      ],
+      'armorProperties': [
+        for (final id in sorted(ItemDatabase.armorProperties))
+          {'id': id, 'name': R.armorProperty(id)},
+      ],
+      'equipmentSlots': {
+        for (final s in EquipmentSlotEnum.values) s.jsonName: s.name,
+      },
+      'rarities': [for (final r in Rarity.values) r.jsonName],
+      'limits': {
+        'maxInventoryItems': Constants.maximumInventoryItemCount,
+        'characterLevel': {
+          'min': Constants.minimumCharacterLevel,
+          'max': Constants.maximumCharacterLevel,
+        },
+        'itemLevel': {
+          'min': Constants.minimumItemLevel,
+          'max': Constants.maximumItemLevel,
+        },
+        'enchantmentTier': {
+          'min': Constants.minimumEnchantmentTier,
+          'max': Constants.maximumEnchantmentTier,
+        },
+        'maxEnchantmentOptionsPerItem':
+            Constants.maximumEnchantmentOptionsPerItem,
+      },
+      'saveFormat': {
+        'itemFields': {
+          'type': 'game item id, e.g. Sword, Battlestaff, FishingRod',
+          'power': 'item power (double) — level = (power-1)*10+1',
+          'rarity': 'Common | Rare | Unique',
+          'equipmentSlot':
+              'gear: MeleeGear | ArmorGear | RangedGear — artifacts: HotbarSlot1-3 — omit for plain inventory',
+          'inventoryIndex': 'grid slot index for unequipped items',
+          'enchantments':
+              'list of {id, level, investedPoints}; each slot needs the full option list the game rolled, or an empty [] for no enchants',
+          'netheriteEnchant':
+              'optional gilded enchant {id, level} shown above the regular slots',
+          'armorproperties':
+              'armor only, list of {id, rarity} ids from armorProperties',
+          'markedNew': 'yellow "new" corner badge',
+          'upgraded': 'gilded-plus upgrade flag',
+          'gifted': 'gift icon flag',
+        },
+        'rules': [
+          'Adding an item with a gear equipmentSlot evicts the item currently holding that slot.',
+          'Enchant ids "Unset" means an empty enchant slot.',
+          'inventoryIndex must be unique within its list; the server assigns the next free index automatically.',
+          'Changes are in-memory until save is called; .dat saves encrypted, .json decrypted.',
+        ],
+      },
+    };
   }
 
   /// Full decrypted profile JSON — for agents that want everything at once.

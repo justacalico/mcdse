@@ -9,6 +9,7 @@ import 'widgets/save_picker_dialog.dart';
 
 import '../app_model.dart';
 import '../data/constants.dart';
+import '../mcp/mcp_host.dart';
 import '../services/event_logger.dart';
 import '../services/local_content_resolver.dart';
 import '../services/string_library.dart';
@@ -152,6 +153,7 @@ class AppShellState extends State<AppShell> {
         {'gameContentLoaded': AppModel.gameContentLoaded.toString()});
     _log('Loading Done');
     setState(() => _mainWindowVisible = true);
+    McpHost.bindProfile(_model.mainModel.profileModel);
     if (Platform.environment['FLUTTER_TEST'] != 'true') {
       windowManager.setTitle(R.applicationTitle).catchError((_) {});
     }

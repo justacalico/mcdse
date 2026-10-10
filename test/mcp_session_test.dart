@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcdse/mcp/save_session.dart';
+import 'package:mcdse/services/databases.dart';
 
 const _blankDat =
     '/mnt/other/devinoruim-projects/MCDSaveEdit-upstream/MCDSaveEditTests/TestData/Blank.dat';
@@ -151,6 +152,46 @@ void main() {
     final s2 = SaveSession();
     await s2.open(datPath);
     expect(s2.listItems('inventory').any((i) => i['type'] == 'Glaive'), true);
+  });
+
+  test('catalog exposes ids, limits and rules', () {
+    ItemDatabase.meleeWeapons.addAll(['Axe', 'Sword']);
+    ItemDatabase.armorProperties.add('ChillingFocus');
+    EnchantmentDatabase.allEnchantments.addAll(['Sharpness', 'Chilling']);
+    addTearDown(() {
+      ItemDatabase.meleeWeapons.clear();
+      ItemDatabase.armorProperties.clear();
+      EnchantmentDatabase.allEnchantments.clear();
+    });
+
+    final s = SaveSession();
+    final cat = s.catalog();
+    expect(cat['itemTypes']['melee'], ['Axe', 'Sword']);
+    final enchants = cat['enchantments'] as List;
+    expect(enchants.singleWhere((e) => e['id'] == 'Chilling')['powerful'], true);
+    expect(enchants.singleWhere((e) => e['id'] == 'Sharpness')['powerful'], false);
+    expect(cat['armorProperties'].single['id'], 'ChillingFocus');
+    expect(cat['equipmentSlots']['MeleeGear'], 'meleeGear');
+    expect(cat['rarities'], containsAll(['Common', 'Rare', 'Unique']));
+    expect(cat['limits']['maxInventoryItems'], 300);
+    expect(cat['saveFormat']['rules'], isNotEmpty);
+  });
+
+  test('onChanged fires on open and every mutation', () async {
+    final s = SaveSession();
+    var calls = 0;
+    s.onChanged = () => calls++;
+    await s.open(jsonFile.path);
+    s.addItem(type: 'Axe');
+    s.updateItem(0, 'inventory', {'power': 9.0});
+    s.duplicateItem(0, 'inventory');
+    s.moveItem(0, 'inventory');
+    s.removeItem(0, 'inventory');
+    s.setCurrency('Emerald', 5);
+    s.setLevel(10);
+    s.setXp(1);
+    await s.save();
+    expect(calls, 10);
   });
 
   test('dump_profile_json returns full map', () async {
