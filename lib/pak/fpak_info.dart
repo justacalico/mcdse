@@ -35,7 +35,8 @@ class FPakInfo {
       final reader = PakBinaryReader(fileBytes, offset);
       final info = FPakInfo._read(reader, maxNumCompressionMethods);
       if (info.version != EPakVersion.invalid) {
-        info.indexOffset += baseOffset;
+        // indexOffset is stored as an absolute file position — do NOT add
+        // baseOffset (the bytes scanned are the file's tail).
         return info;
       }
       offset -= compressionMethodNameLen;

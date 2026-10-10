@@ -64,7 +64,9 @@ class PakIndex {
     return n;
   }
 
-  /// Iterates every file path (mount point + entry name).
+  /// Iterates every file path (mount point + entry key, which itself is
+  /// mount-prefixed by `Paks.merge`). Upstream relies on the resulting
+  /// `//` junction — resolvers strip it via `indexOf('//') + 1`.
   Iterable<String> get filePaths sync* {
     for (final pak in pakFiles) {
       if (!pak.initialized) continue;
@@ -111,7 +113,9 @@ class PakIndex {
       if (!pak.initialized) continue;
       if (!path.startsWith(pak.mountPoint)) continue;
       final (uasset, uexp, ubulk) = pak.tryGetFile(path);
-      if (uasset == null || uexp == null) return null;
+      // Entry not in this pak — keep looking in the others.
+      if (uasset == null) continue;
+      if (uexp == null) return null;
       final package = PakPackage(uasset, uexp, ubulk);
       _packages[path] = package;
       return package;

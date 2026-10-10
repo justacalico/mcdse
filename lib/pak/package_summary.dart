@@ -7,7 +7,7 @@ class FPackageFileSummary {
     const packageFileTag = 0x9E2A83C1;
     const packageFileTagSwapped = 0xC1832A9E;
 
-    var tag = reader.readInt32();
+    var tag = reader.readUInt32();
     if (tag != packageFileTag && tag != packageFileTagSwapped) {
       throw const FormatException('Not a UE package');
     }

@@ -83,6 +83,7 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
   /// Equivalent to upstream `loadPakFiles`.
   void loadPakFiles({bool preloadBitmaps = false}) {
     debugPrint('Loading Pak Files');
+    _levels.clear();
     for (final item in pakIndex.filePaths) {
       final startIndex = item.indexOf('//') + 1;
       final fullPath = item.substring(startIndex);
