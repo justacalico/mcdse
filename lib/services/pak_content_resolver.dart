@@ -268,8 +268,16 @@ class PakContentResolver extends IImageResolver implements ILanguageResolver {
       final rgba = texture.decodeRgba();
       if (rgba == null) return null;
       final mip = texture.platformDatas[0].mips[0];
+      // decodeImage over-allocates its output buffer (upstream's padded
+      // formula) — Image.fromBytes must only see w*h*4 bytes, so copy
+      // (a sublist view's .buffer still exposes the whole backing array).
+      final pixelBytes =
+          rgba.sublist(0, mip.sizeX * mip.sizeY * 4);
       final image = img.Image.fromBytes(
-          width: mip.sizeX, height: mip.sizeY, bytes: rgba.buffer);
+          width: mip.sizeX,
+          height: mip.sizeY,
+          bytes: pixelBytes.buffer,
+          numChannels: 4);
       return Uint8List.fromList(img.encodePng(image));
     } catch (e) {
       EventLogger.logError('Could not decode texture: $e');
