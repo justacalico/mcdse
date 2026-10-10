@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v1.0.2 - 2026-10-10
+#### Bug Fixes
+- auto-release 正确识别无需发版的情况 - (be16464) - HttpAnimations
+
+- - -
+
 ## v1.0.1 - 2026-10-10
 #### Bug Fixes
 - bump-version.sh 加执行权限 - (c25f029) - HttpAnimations
