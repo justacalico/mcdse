@@ -1,95 +1,357 @@
-name: Build & Release
+name: Build and Release
 
 on:
   push:
-    branches: [master, main]
+    branches: [main]
     tags: ['v*']
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      build_all:
+        description: 'Build all targets (linux, linux-arm64, windows, windows-arm64, macos)'
+        type: boolean
+        default: true
+      create_release:
+        description: 'Create a versioned release from this build'
+        type: boolean
+        default: false
+      merge_request_id:
+        description: 'Merge request ID (development builds only)'
+        type: string
+        default: ''
+      merge_request_url:
+        description: 'Merge request URL (development builds only)'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: "3.47.6"
+  COCOGITTO_VERSION: "7.0.0"
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  setup:
+    name: Setup build metadata
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      build_number: ${{ steps.meta.outputs.build_number }}
+      build_date: ${{ steps.meta.outputs.build_date }}
+      build_all: ${{ steps.meta.outputs.build_all }}
+      targets: ${{ steps.meta.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Read version and build metadata
+        id: meta
+        run: |
+          VERSION=$(sed -n 's/^version: \(.*\)+.*/\1/p' pubspec.yaml | head -1)
+          BUILD_NUMBER=$(date +%s | cut -c4-10)
+          BUILD_DATE=$(date +%Y-%m-%d)
+          if [ -n "${{ inputs.build_all }}" ]; then
+            BUILD_ALL="${{ inputs.build_all }}"
+          else
+            BUILD_ALL="true"
+          fi
+          if [ "$BUILD_ALL" = "true" ]; then
+            TARGETS='[{"target":"linux","os":"ubuntu-latest"},{"target":"linux-arm64","os":"ubuntu-24.04-arm","flutter":"git"},{"target":"windows","os":"windows-latest"},{"target":"windows-arm64","os":"windows-11-arm","flutter":"git"},{"target":"macos","os":"macos-latest","flutter_arch":"arm64"}]'
+          else
+            TARGETS='[{"target":"linux","os":"ubuntu-latest"}]'
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "build_date=$BUILD_DATE" >> "$GITHUB_OUTPUT"
+          echo "build_all=$BUILD_ALL" >> "$GITHUB_OUTPUT"
+          echo "targets=$TARGETS" >> "$GITHUB_OUTPUT"
+
+  verify-frontend:
+    name: Verify frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
         with:
-          channel: stable
-      - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
-      - run: flutter test
+          fetch-depth: 0
+          fetch-tags: true
 
-  linux:
-    needs: test
-    runs-on: ubuntu-latest
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install cocogitto
+        run: |
+          curl -fsSL --retry 3 -o /tmp/cog.tar.gz "https://github.com/cocogitto/cocogitto/releases/download/${{ env.COCOGITTO_VERSION }}/cocogitto-${{ env.COCOGITTO_VERSION }}-x86_64-unknown-linux-musl.tar.gz"
+          mkdir -p /tmp/cog && tar -xzf /tmp/cog.tar.gz -C /tmp/cog
+          sudo install -m 755 /tmp/cog/x86_64-unknown-linux-musl/cog /usr/local/bin/cog
+
+      - name: Check commits
+        if: github.event_name != 'pull_request'
+        run: cog check
+
+      - name: Install Xvfb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb
+
+      - name: Analyze and test
+        run: |
+          flutter config --no-analytics >/dev/null
+          flutter pub get
+          flutter analyze --no-pub
+          xvfb-run -a flutter test --no-pub
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: [setup, verify-frontend]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.setup.outputs.targets) }}
+    env:
+      VERSION: ${{ needs.setup.outputs.version }}
+      BUILD_NUMBER: ${{ needs.setup.outputs.build_number }}
+      BUILD_DATE: ${{ needs.setup.outputs.build_date }}
+      MERGE_REQUEST_ID: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || inputs.merge_request_id || '' }}
+      MERGE_REQUEST_URL: ${{ github.event_name == 'pull_request' && github.event.pull_request.html_url || inputs.merge_request_url || '' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
         with:
-          channel: stable
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libayatana-appindicator3-dev
-      - run: flutter pub get && flutter build linux --release
-      - name: Package
-        run: |
-          cd build/linux/x64/release/bundle
-          tar -czf "$GITHUB_WORKSPACE/mcdse-linux-x64.tar.gz" .
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mcdse-linux-x64
-          path: mcdse-linux-x64.tar.gz
+          fetch-depth: 0
+          fetch-tags: true
 
-  windows:
-    needs: test
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Install Flutter
+        if: matrix.flutter != 'git'
+        uses: subosito/flutter-action@v2
         with:
-          channel: stable
-      - run: flutter pub get
-      - run: flutter build windows --release
-      - name: Package
-        run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath mcdse-windows-x64.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mcdse-windows-x64
-          path: mcdse-windows-x64.zip
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: ${{ matrix.flutter_arch || 'x64' }}
+          cache: true
 
-  macos:
-    needs: test
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-      - run: flutter pub get
-      - run: flutter build macos --release
-      - name: Package
+      - name: Install Flutter from source (arm64)
+        if: matrix.flutter == 'git'
+        shell: bash
         run: |
-          cd build/macos/Build/Products/Release
-          tar -czf "$GITHUB_WORKSPACE/mcdse-macos.tar.gz" mcdse.app
-      - uses: actions/upload-artifact@v4
+          set -euo pipefail
+          git clone --depth 1 --branch "${{ env.FLUTTER_VERSION }}" https://github.com/flutter/flutter.git "$HOME/flutter-sdk"
+          echo "$HOME/flutter-sdk/bin" >> "$GITHUB_PATH"
+          if [ "${{ matrix.target }}" = "linux-arm64" ]; then
+            "$HOME/flutter-sdk/bin/flutter" precache --linux
+          else
+            "$HOME/flutter-sdk/bin/flutter" precache --windows
+          fi
+
+      - name: Install Linux build dependencies
+        if: startsWith(matrix.target, 'linux')
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev zip dpkg-dev rpm
+
+      - name: Build Linux desktop packages
+        if: startsWith(matrix.target, 'linux')
+        run: |
+          set -euo pipefail
+          ARTIFACTS_DIR="$GITHUB_WORKSPACE/artifacts"
+          mkdir -p "$ARTIFACTS_DIR"
+          flutter config --no-analytics >/dev/null
+          flutter pub get
+          flutter config --enable-linux-desktop
+          flutter build linux --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+          if [ "${{ matrix.target }}" = "linux-arm64" ]; then
+            LINUX_ARCH=arm64
+            DEB_ARCH=arm64
+            RPM_ARCH=aarch64
+            OUT_ARCH=arm64
+          else
+            LINUX_ARCH=x64
+            DEB_ARCH=amd64
+            RPM_ARCH=x86_64
+            OUT_ARCH=x86_64
+          fi
+          BUNDLE="build/linux/$LINUX_ARCH/release/bundle"
+          tar -czf "$ARTIFACTS_DIR/mcdse-linux-$OUT_ARCH.tar.gz" -C "$BUNDLE" .
+          (cd "$BUNDLE" && zip -r "$ARTIFACTS_DIR/mcdse-linux-$OUT_ARCH.zip" . >/dev/null)
+          pkgdir="$GITHUB_WORKSPACE/mcdse-linux-$OUT_ARCH-deb"
+          rm -rf "$pkgdir"
+          mkdir -p "$pkgdir/opt/mcdse" "$pkgdir/usr/bin" "$pkgdir/DEBIAN"
+          cp -r "$BUNDLE/." "$pkgdir/opt/mcdse/"
+          ln -sf /opt/mcdse/mcdse "$pkgdir/usr/bin/mcdse"
+          {
+            echo "Package: mcdse"
+            echo "Version: $VERSION"
+            echo "Section: misc"
+            echo "Priority: optional"
+            echo "Architecture: $DEB_ARCH"
+            echo "Maintainer: MCDSE CI <ci@gitlab.com>"
+            echo "Description: Minecraft Dungeons save file editor"
+          } > "$pkgdir/DEBIAN/control"
+          dpkg-deb --build "$pkgdir" "$ARTIFACTS_DIR/mcdse-linux-$OUT_ARCH.deb" >/dev/null
+          rm -rf "$pkgdir"
+          ./scripts/build-rpm.sh "$BUNDLE" "$VERSION" "$RPM_ARCH" "$ARTIFACTS_DIR/mcdse-linux-$OUT_ARCH.rpm" "$BUILD_NUMBER"
+
+      - name: Build Windows package
+        if: startsWith(matrix.target, 'windows')
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARTIFACTS_DIR="$GITHUB_WORKSPACE/artifacts"
+          mkdir -p "$ARTIFACTS_DIR"
+          flutter config --no-analytics >/dev/null
+          flutter pub get
+          flutter config --enable-windows-desktop
+          flutter build windows --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+          if [ "${{ matrix.target }}" = "windows-arm64" ]; then
+            WIN_ARCH=arm64
+            OUT_ARCH=arm64
+          else
+            WIN_ARCH=x64
+            OUT_ARCH=x86_64
+          fi
+          RELEASE_DIR="build/windows/$WIN_ARCH/runner/Release"
+          if [ ! -d "$RELEASE_DIR" ]; then
+            echo "Expected Windows build output at $RELEASE_DIR is missing" >&2
+            exit 1
+          fi
+          powershell -NoProfile -Command \
+            "Compress-Archive -Path '$(cygpath -w "$RELEASE_DIR")\\*' -DestinationPath '$(cygpath -w "$ARTIFACTS_DIR/mcdse-windows-$OUT_ARCH.zip")' -Force"
+
+      - name: Build macOS package
+        if: matrix.target == 'macos'
+        run: |
+          set -euo pipefail
+          ARTIFACTS_DIR="$GITHUB_WORKSPACE/artifacts"
+          mkdir -p "$ARTIFACTS_DIR"
+          flutter config --no-analytics >/dev/null
+          flutter pub get
+          flutter config --enable-macos-desktop
+          flutter build macos --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+          APP="build/macos/Build/Products/Release/mcdse.app"
+          codesign --force --deep --sign - "$APP"
+          (cd "$(dirname "$APP")" && zip -r "$ARTIFACTS_DIR/mcdse-macos-arm64.zip" "mcdse.app" >/dev/null)
+          hdiutil create -volname "MCDSE" -srcfolder "$APP" -ov -format UDZO "$ARTIFACTS_DIR/mcdse-macos-arm64.dmg" >/dev/null
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: mcdse-macos
-          path: mcdse-macos.tar.gz
+          name: ${{ matrix.target }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 400
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, windows, macos]
+    name: Release
     runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.setup.outputs.build_all == 'true' && inputs.merge_request_id == '' && ((github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && (inputs.create_release == true || inputs.create_release == 'true')) || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) }}
     permissions:
       contents: write
+    concurrency:
+      group: release-ops
+      cancel-in-progress: false
+    outputs:
+      release_tag: ${{ steps.meta.outputs.release_tag }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Determine release tag
+        id: meta
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "release_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_tag=v${{ needs.setup.outputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create version tag
+        if: github.event_name == 'workflow_dispatch' && (inputs.create_release == true || inputs.create_release == 'true')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force
+          TAG="${{ steps.meta.outputs.release_tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            if [ "$(git rev-parse "$TAG")" != "$GITHUB_SHA" ]; then
+              echo "Tag $TAG exists on a different commit" >&2
+              exit 1
+            fi
+          else
+            git tag "$TAG" "$GITHUB_SHA"
+            git push origin "$TAG"
+          fi
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - uses: softprops/action-gh-release@v2
+
+      - name: Prepare release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          find artifacts -type f -name 'mcdse*' -exec cp {} release-assets/ \;
+          TAG="${{ steps.meta.outputs.release_tag }}"
+          git archive --format=tar.gz --prefix="mcdse-${TAG#v}/" \
+            -o "release-assets/mcdse-${TAG}-source.tar.gz" "$TAG"
+          ls -la release-assets/
+
+      - name: Generate checksums
+        working-directory: release-assets
+        run: |
+          sha256sum * > ../SHA256SUMS.txt
+          cat ../SHA256SUMS.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          tag_name: ${{ steps.meta.outputs.release_tag }}
+          name: MCDSE ${{ steps.meta.outputs.release_tag }}
+          generate_release_notes: true
+          body: |
+            **Version:** ${{ needs.setup.outputs.version }}
+            **Build:** #${{ github.run_number }}
+            **Date:** ${{ needs.setup.outputs.build_date }}
+            **Commit:** ${{ github.sha }}
+
+            ### Artifacts
+            - Linux desktop (x86_64 + arm64: tar.gz, zip, deb, rpm)
+            - Windows package (x86_64 + arm64: zip)
+            - macOS app (arm64: dmg, zip)
+
+            ### Verification
+            SHA256 checksums are in `SHA256SUMS.txt`.
           files: |
-            artifacts/mcdse-linux-x64/mcdse-linux-x64.tar.gz
-            artifacts/mcdse-windows-x64/mcdse-windows-x64.zip
-            artifacts/mcdse-macos/mcdse-macos.tar.gz
+            release-assets/*
+            SHA256SUMS.txt
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  gitlab-sync:
+    name: Trigger GitLab sync
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: needs.release.result == 'success'
+    steps:
+      - name: Trigger GitLab sync pipeline
+        run: |
+          curl -fsSL --max-time 30 --retry 2 -X POST \
+            -F token="${{ secrets.GITLAB_TRIGGER_TOKEN }}" \
+            -F "ref=master" \
+            -F "variables[GITHUB_RUN_ID]=${{ github.run_id }}" \
+            -F "variables[RELEASE_TAG]=${{ needs.release.outputs.release_tag }}" \
+            "https://gitlab.com/api/v4/projects/${{ secrets.GITLAB_PROJECT_ID }}/trigger/pipeline"
