@@ -63,6 +63,110 @@ void main() {
     expect(vm.profile.value!.items![1].type, 'Bow');
   });
 
+  test('tools/list exposes every save tool and calls run', () async {
+    final port = await McpHost.start(port: 0);
+    final client = HttpClient();
+    addTearDown(client.close);
+    String? sessionId;
+    Future<Map<String, dynamic>?> rpc(Map<String, dynamic> payload) async {
+      final req = await client.post(
+          '127.0.0.1', port, '/mcp')
+        ..headers.contentType = ContentType.json
+        ..headers.set('accept', 'application/json, text/event-stream');
+      if (sessionId != null) req.headers.set('mcp-session-id', sessionId!);
+      req.write(jsonEncode(payload));
+      final res = await req.close();
+      sessionId ??= res.headers.value('mcp-session-id');
+      final body = await res.transform(utf8.decoder).join();
+      if (body.isEmpty) return null;
+      if (body.startsWith('data:')) {
+        final data = body.substring(body.indexOf('data:') + 5).trim();
+        return jsonDecode(data) as Map<String, dynamic>;
+      }
+      return jsonDecode(body) as Map<String, dynamic>;
+    }
+
+    final init = await rpc({
+      'jsonrpc': '2.0',
+      'id': 1,
+      'method': 'initialize',
+      'params': {
+        'protocolVersion': '2025-11-25',
+        'capabilities': <String, dynamic>{},
+        'clientInfo': {'name': 'test', 'version': '1'}
+      }
+    });
+    expect(init!['result'], isNotNull);
+
+    await rpc({
+      'jsonrpc': '2.0',
+      'method': 'notifications/initialized',
+      'params': <String, dynamic>{}
+    });
+
+    final list = await rpc({
+      'jsonrpc': '2.0',
+      'id': 2,
+      'method': 'tools/list',
+      'params': <String, dynamic>{}
+    });
+    final names = ((list!['result'] as Map)['tools'] as List)
+        .map((t) => t['name'])
+        .toSet();
+    expect(
+        names,
+        containsAll([
+          'game_catalog',
+          'detect_save_files',
+          'open_save',
+          'save_info',
+          'dump_profile_json',
+          'list_items',
+          'get_item',
+          'add_item',
+          'update_item',
+          'duplicate_item',
+          'move_item',
+          'remove_item',
+          'set_level',
+          'set_xp',
+          'set_currency',
+          'save',
+        ]));
+
+    final open = await rpc({
+      'jsonrpc': '2.0',
+      'id': 3,
+      'method': 'tools/call',
+      'params': {
+        'name': 'open_save',
+        'arguments': {'path': 'test/data/Blank.dat'}
+      }
+    });
+    expect(open!['result']['isError'], isNot(true));
+
+    final call = await rpc({
+      'jsonrpc': '2.0',
+      'id': 4,
+      'method': 'tools/call',
+      'params': {'name': 'save_info', 'arguments': <String, dynamic>{}}
+    });
+    final info = call!['result'] as Map;
+    expect(info['isError'], isNot(true));
+    expect((info['content'] as List).first['text'], contains('inventoryItemCount'));
+
+    final bad = await rpc({
+      'jsonrpc': '2.0',
+      'id': 5,
+      'method': 'tools/call',
+      'params': {
+        'name': 'update_item',
+        'arguments': {'index': 999, 'fields': <String, dynamic>{}}
+      }
+    });
+    expect(bad!['result']['isError'], true);
+  });
+
   test('export writes a valid mcpb zip', () async {
     final dir = Directory.systemTemp.createTempSync('mcdse_mcpb');
     addTearDown(() => dir.deleteSync(recursive: true));
