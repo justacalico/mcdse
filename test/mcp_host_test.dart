@@ -5,7 +5,6 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcdse/mcp/mcp_host.dart';
 import 'package:mcdse/mcp/mcpb_exporter.dart';
-import 'package:mcdse/core/property.dart';
 import 'package:mcdse/data/models/profile_save_file.dart';
 import 'package:mcdse/services/settings_store.dart';
 import 'package:mcdse/viewmodels/profile_view_model.dart';
