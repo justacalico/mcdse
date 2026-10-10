@@ -5,8 +5,10 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app_model.dart';
 import 'data/constants.dart';
+import 'theme.dart';
 import 'services/encryption.dart';
 import 'services/event_logger.dart';
+import 'ui/property_widgets.dart';
 import 'ui/app_shell.dart';
 
 Future<void> main(List<String> args) async {
@@ -15,6 +17,7 @@ Future<void> main(List<String> args) async {
   // Runtime encryption key override (MCDSE_SAVE_KEY env var).
   SaveKeys.initFromEnvironment();
 
+  ThemeController.init();
   EventLogger.init();
 
   if (!Platform.environment.containsKey('FLUTTER_TEST') &&
@@ -25,6 +28,8 @@ Future<void> main(List<String> args) async {
       minimumSize: Size(1200, 490),
       center: true,
       title: Constants.applicationTitle,
+      titleBarStyle: TitleBarStyle.hidden,
+      windowButtonVisibility: false,
     );
     // Don't await waitUntilReadyToShow — in test/headless environments it
     // may never resolve, which would stall startup before runApp().
@@ -50,11 +55,14 @@ class McdseApp extends StatelessWidget {
     return MaterialApp(
       title: Constants.applicationTitle,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-        visualDensity: VisualDensity.compact,
+      builder: (context, child) => PropertyBuilder(
+        properties: [ThemeController.theme],
+        builder: (context) => Theme(
+          data: buildThemeData(ThemeController.theme.value),
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
+      theme: buildThemeData(ThemeController.theme.value),
       home: Scaffold(
         body: AppShell(appModel: model ?? AppModel(), args: args),
       ),

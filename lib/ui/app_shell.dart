@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'widgets/custom_title_bar.dart';
+
 import '../app_model.dart';
 import '../data/constants.dart';
 import '../services/event_logger.dart';
@@ -171,14 +173,26 @@ class AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_mainWindowVisible) {
-      return SplashWindow(key: _splashKey);
-    }
-    return MainWindow(
-      key: ValueKey(_mainWindowEpoch),
-      model: _model.mainModel,
-      onRelaunch: _onRelaunch,
-      onReload: _onReload,
+    final content = !_mainWindowVisible
+        ? SplashWindow(key: _splashKey)
+        : MainWindow(
+            key: ValueKey(_mainWindowEpoch),
+            model: _model.mainModel,
+            onRelaunch: _onRelaunch,
+            onReload: _onReload,
+          );
+    // Custom frame: our own title bar + resize edges instead of the OS one.
+    return VirtualWindowFrame(
+      child: Column(
+        children: [
+          ValueListenableBuilder<String>(
+            valueListenable: WindowTitle.notifier,
+            builder: (context, title, _) =>
+                CustomTitleBar(title: title),
+          ),
+          Expanded(child: content),
+        ],
+      ),
     );
   }
 }

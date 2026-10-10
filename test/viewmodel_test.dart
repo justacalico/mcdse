@@ -1,19 +1,14 @@
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcdse/core/property.dart';
-import 'package:mcdse/data/constants.dart';
 import 'package:mcdse/data/enums.dart';
 import 'package:mcdse/data/models/enchantment.dart';
 import 'package:mcdse/data/models/item.dart';
 import 'package:mcdse/data/models/profile_save_file.dart';
-import 'package:mcdse/data/profile_parser.dart';
-import 'package:mcdse/logic/extensions.dart';
 import 'package:mcdse/services/settings_store.dart';
 import 'package:mcdse/utils/version_utils.dart';
 import 'package:mcdse/viewmodels/main_equipment_view_model.dart';
 import 'package:mcdse/viewmodels/storage_chest_equipment_view_model.dart';
-import 'package:mcdse/viewmodels/item_list_view_model.dart';
 
 void main() {
   setUpAll(() => SettingsStore.disableIo());

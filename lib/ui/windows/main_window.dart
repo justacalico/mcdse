@@ -10,6 +10,7 @@ import 'package:window_manager/window_manager.dart';
 import '../../app_model.dart';
 import '../../data/constants.dart';
 import '../../services/config.dart';
+import '../../theme.dart';
 import '../../services/event_logger.dart';
 import '../../services/string_library.dart';
 import '../../viewmodels/main_view_model.dart';
@@ -19,6 +20,7 @@ import '../tabs/chest_tab.dart';
 import '../tabs/inventory_tab.dart';
 import '../tabs/stats_tab.dart';
 import '../widgets/busy_indicator.dart';
+import '../widgets/custom_title_bar.dart';
 import 'about_window.dart';
 
 /// Ported from `UI/Windows/MainWindow.xaml(.cs)` — menu bar, tabs, keyboard
@@ -133,11 +135,12 @@ class MainWindowState extends State<MainWindow> {
   }
 
   void _updateTitle() {
-    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
     final filePath = _profileModel.filePath;
     final title = filePath != null
         ? '${R.applicationTitle} - ${filePath.split(RegExp(r'[/\\]')).last}'
         : R.applicationTitle;
+    WindowTitle.title = title;
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
     try {
       windowManager.setTitle(title);
     } catch (_) {}
@@ -333,6 +336,12 @@ class MainWindowState extends State<MainWindow> {
               for (final lang in LanguageResolver.instance.localizationOptions)
                 _langMenuEntry(_langDisplayName(lang), lang),
             ]),
+            // Theme menu.
+            _menuButton('Theme', [
+              _themeMenuEntry('Light', AppTheme.light),
+              _themeMenuEntry('Dark', AppTheme.dark),
+              _themeMenuEntry('OLED', AppTheme.oled),
+            ]),
             // About.
             _menuButton(R.menuItemAbout, null, onPressed: () {
               EventLogger.logEvent('aboutMenuItem_Click');
@@ -364,6 +373,25 @@ class MainWindowState extends State<MainWindow> {
       }
     } catch (_) {}
     return lang;
+  }
+
+  PopupMenuEntry<String> _themeMenuEntry(String label, AppTheme theme) {
+    final selected = ThemeController.theme.value == theme;
+    return PopupMenuItem(
+      onTap: () {
+        ThemeController.setTheme(theme);
+        EventLogger.logEvent('themeSelectedMenuItem_Click',
+            {'theme': theme.specifier});
+        setState(() {});
+      },
+      child: Row(
+        children: [
+          if (selected) const Icon(Icons.check, size: 16),
+          if (selected) const SizedBox(width: 4),
+          Text(label),
+        ],
+      ),
+    );
   }
 
   PopupMenuEntry<String> _langMenuEntry(String label, String lang) {
