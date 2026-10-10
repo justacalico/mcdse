@@ -43,6 +43,28 @@ flutter build windows
 flutter build macos
 ```
 
+## MCP server (AI agent access)
+
+The project ships an MCP stdio server so an AI agent can read and edit
+your save directly. Build the bundle:
+
+```bash
+./mcpb/build_mcpb.sh      # → mcdse.mcpb (manifest + compiled server)
+```
+
+Install `mcdse.mcpb` in an MCPB-aware client, or point any MCP client at
+the compiled binary directly:
+
+```bash
+dart build cli -t bin/mcp_server.dart -o build/mcp   # → build/mcp/bundle/bin/mcp_server
+```
+
+Tools: `detect_save_files`, `open_save`, `save_info`,
+`dump_profile_json`, `list_items`, `get_item`, `add_item`,
+`update_item`, `duplicate_item`, `move_item`, `remove_item`,
+`set_currency`, `set_level`, `set_xp`, `save`. Writes stay in memory
+until `save` is called; `.dat` writes encrypted, `.json` decrypted.
+
 ## Testing
 
 ```bash

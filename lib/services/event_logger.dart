@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
 
 /// Local stand-in for upstream's GameAnalytics-backed `EventLogger`.
 /// Events are written to the debug log only — nothing is sent anywhere.
@@ -11,17 +11,17 @@ abstract final class EventLogger {
     if (fields != null) {
       final fieldsStr =
           fields.entries.map((e) => '${e.key}=${e.value}').join(' ');
-      debugPrint('[EVENT] $eventId fields: $fieldsStr');
+      developer.log('[EVENT] $eventId fields: $fieldsStr');
     } else {
-      debugPrint('[EVENT] $eventId');
+      developer.log('[EVENT] $eventId');
     }
   }
 
   static void logEventValue(String eventId, double value) {
-    debugPrint('[EVENT] $eventId value=$value');
+    developer.log('[EVENT] $eventId value=$value');
   }
 
   static void logError(String message) {
-    debugPrint('[ERROR] $message');
+    developer.log('[ERROR] $message');
   }
 }

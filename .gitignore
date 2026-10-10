@@ -76,3 +76,6 @@ coverage/
 *.secret
 tool/dbg.dart
 test/goldens/failures/
+/mcpb/build/
+/mcpb/server/
+*.mcpb

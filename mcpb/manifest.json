@@ -1,0 +1,36 @@
+{
+  "manifest_version": "0.1",
+  "name": "mcdse-save-editor",
+  "display_name": "Minecraft Dungeons Save Editor",
+  "version": "1.0.0",
+  "description": "Read and edit Minecraft Dungeons character save files (.dat encrypted / .json). Lists detected saves, shows items/currencies/level, adds/edits/moves items, and writes back in the original format.",
+  "author": {
+    "name": "HttpAnimations",
+    "url": "https://gitlab.com/HttpAnimations/mcdse"
+  },
+  "server": {
+    "type": "binary",
+    "entry_point": "server/mcdse-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/mcdse-mcp",
+      "args": []
+    }
+  },
+  "tools": [
+    {"name": "detect_save_files", "description": "List save files found on this machine"},
+    {"name": "open_save", "description": "Open a .dat or .json character save"},
+    {"name": "save_info", "description": "Summary: level, xp, power, currencies, equipped items"},
+    {"name": "list_items", "description": "List items in inventory/chest"},
+    {"name": "add_item", "description": "Add an item by game id"},
+    {"name": "update_item", "description": "Patch item fields"},
+    {"name": "duplicate_item", "description": "Duplicate an item"},
+    {"name": "move_item", "description": "Move an item between inventory and chest"},
+    {"name": "remove_item", "description": "Delete an item"},
+    {"name": "set_currency", "description": "Set Emerald/Gold/EyeOfEnder count"},
+    {"name": "set_level", "description": "Set character level"},
+    {"name": "set_xp", "description": "Set character xp"},
+    {"name": "save", "description": "Write the modified save back to disk"}
+  ],
+  "keywords": ["minecraft", "dungeons", "save", "editor"],
+  "license": "MIT"
+}

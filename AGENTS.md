@@ -43,4 +43,12 @@ site under `landing/`.
   loops inside `tester.runAsync` (file IO needs the real event loop).
 - Pak key constant lives in `lib/data/secrets.dart` (`PakAesKey`).
 - Tests need real Blank.dat at `test/data/Blank.dat`.
+- `bin/mcp_server.dart` is a pure-Dart MCP stdio server (mcp_dart);
+  `lib/mcp/save_session.dart` holds the testable session logic.
+  Keep `lib/logic`, `lib/data`, and anything the server imports free of
+  Flutter imports or `dart compile` breaks. `./mcpb/build_mcpb.sh`
+  packages `mcdse.mcpb` (manifest.json + compiled binary).
+- Profile model lists (`items`, `storageChestItems`, `currency`) are
+  cached wrappers — always mutate through the property setter or commit
+  via `_commit`, otherwise edits are lost on `ProfileParser.write`.
 - Do not commit paks or save files.
