@@ -9,10 +9,9 @@ import 'pak_package.dart';
 /// Ported from `Pak/PakIndex.cs` — the aggregate of all .pak files in a
 /// directory, keyed by mount-relative path.
 class PakIndex {
-  PakIndex({required String path, bool cacheFiles = true, bool caseSensitive = true, PakFilter? filter})
+  PakIndex({required String path, bool cacheFiles = true, bool caseSensitive = true, this._filter})
       : _caseSensitive = caseSensitive,
-        _cacheFiles = cacheFiles,
-        _filter = filter {
+        _cacheFiles = cacheFiles {
     if (cacheFiles) _cachedFiles = {};
     for (final entity in Directory(path)
         .listSync()
@@ -22,10 +21,9 @@ class PakIndex {
   }
 
   PakIndex.fromFiles(Iterable<String> files,
-      {bool cacheFiles = true, bool caseSensitive = true, PakFilter? filter})
+      {bool cacheFiles = true, bool caseSensitive = true, this._filter})
       : _caseSensitive = caseSensitive,
-        _cacheFiles = cacheFiles,
-        _filter = filter {
+        _cacheFiles = cacheFiles {
     if (cacheFiles) _cachedFiles = {};
     for (final file in files) {
       pakFiles.add(PakFileReader(file, caseSensitive: caseSensitive));
@@ -94,7 +92,7 @@ class PakIndex {
     for (final pak in pakFiles) {
       if (!pak.initialized) continue;
       if (p.startsWith(pak.mountPoint)) {
-        final (uasset, _, __) = pak.tryGetFile(p);
+        final (uasset, _, _) = pak.tryGetFile(p);
         if (uasset != null) {
           if (_cacheFiles) _cachedFiles[p] = uasset;
           return uasset;

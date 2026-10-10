@@ -107,6 +107,6 @@ class ItemControl extends StatelessWidget {
   static Widget memoryImage(Uint8List? bytes) {
     if (bytes == null) return const SizedBox.shrink();
     return Image.memory(bytes, fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink());
+        errorBuilder: (_, _, _) => const SizedBox.shrink());
   }
 }

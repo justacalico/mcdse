@@ -1,5 +1,6 @@
 /// Observable property primitives ported from MCDSaveEdit's
 /// `Core/Observables.cs` (Property / MappedProperty).
+library;
 
 typedef PropertySubscriber<T> = void Function(T value);
 

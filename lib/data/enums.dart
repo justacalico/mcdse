@@ -1,4 +1,5 @@
 /// Enums ported from MCDSaveEdit's `Data/Enums/*`.
+library;
 
 enum DifficultyEnum {
   difficulty1('Difficulty_1', 1),

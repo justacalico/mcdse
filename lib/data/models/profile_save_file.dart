@@ -100,7 +100,7 @@ class ProfileSaveFile {
 
   set lobbychestProgress(Map<String, LobbychestProgress>? v) =>
       json['lobbychest_progress'] =
-          v == null ? null : v.map((k, e) => MapEntry(k, e.json));
+          v?.map((k, e) => MapEntry(k, e.json));
 
   dynamic get mapUiState => json['mapUIState'];
   set mapUiState(dynamic v) => json['mapUIState'] = v;
@@ -134,7 +134,7 @@ class ProfileSaveFile {
   }
 
   set progress(Map<String, Progress>? v) =>
-      json['progress'] = v == null ? null : v.map((k, e) => MapEntry(k, e.json));
+      json['progress'] = v?.map((k, e) => MapEntry(k, e.json));
 
   Map<String, int>? get progressStatCounters => _longMap('progressStatCounters');
   set progressStatCounters(Map<String, int>? v) => json['progressStatCounters'] = v;

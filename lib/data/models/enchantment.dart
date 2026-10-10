@@ -5,7 +5,7 @@ class Enchantment {
   Enchantment.fromFields({String id = '', int? investedPoints, int level = 0})
       : json = <String, dynamic>{
           'id': id,
-          if (investedPoints != null) 'investedPoints': investedPoints,
+          'investedPoints': ?investedPoints,
           'level': level,
         };
 

@@ -144,7 +144,7 @@ class ItemListScreen extends StatelessWidget {
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
             backgroundColor:
-                isSelected ? Colors.black.withOpacity(0.08) : null,
+                isSelected ? Colors.black.withValues(alpha: 0.08) : null,
           ),
           onPressed: enabled ? () => _setFilter(filter, event) : null,
           child: icon != null

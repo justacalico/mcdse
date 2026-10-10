@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mcdse/viewmodels/main_equipment_view_model.dart';
 
 import '../../app_model.dart';
 import '../../data/enums.dart';
@@ -24,7 +25,7 @@ class InventoryTab extends StatefulWidget {
 
 class InventoryTabState extends State<InventoryTab> {
   ProfileViewModel get _model => widget.model;
-  get _equipmentModel => _model.mainEquipmentModel;
+  MainEquipmentViewModel get _equipmentModel => _model.mainEquipmentModel;
 
   final _emeraldsController = TextEditingController();
   final _goldController = TextEditingController();
@@ -88,7 +89,7 @@ class InventoryTabState extends State<InventoryTab> {
                     ? Image.memory(icon, fit: BoxFit.contain)
                     : Image.asset('assets/images/$assetName',
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (_, _, _) =>
                             const SizedBox.shrink()),
               ),
             ),

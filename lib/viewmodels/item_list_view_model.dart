@@ -9,16 +9,16 @@ import 'equipment_view_model.dart';
 
 /// Ported from `ViewModels/ItemListViewModel.cs`.
 abstract class ItemListViewModel extends EquipmentViewModel {
-  ItemListViewModel(Property<ProfileSaveFile?> profile) : super(profile) {
-    equipmentCanExist = this.profile.map((p) => p != null);
-    level = this.profile.map<int?>(
+  ItemListViewModel(super.profile){
+    equipmentCanExist = profile.map((p) => p != null);
+    level = profile.map<int?>(
         (p) => p?.level() ?? Constants.minimumCharacterLevel, setXpFromLevel);
     filteredItemList = _filter.map(getFilteredItems);
-    equippedItemList = this.profile.map<List<Item>>(
+    equippedItemList = profile.map<List<Item>>(
         (p) => p?.items?.where((x) => x.equipmentSlot != null).toList() ?? const []);
     characterPower = equippedItemList.map(computeCharacterPower);
 
-    this.profile.subscribe((p) {
+    profile.subscribe((p) {
       filter.setValue = ItemFilterEnum.all;
       selectedItemProperty.setValue = null;
     });

@@ -25,20 +25,20 @@ class Item {
   }) : json = <String, dynamic>{
           if (armorProperties != null)
             'armorproperties': [for (final p in armorProperties) p.json],
-          if (cloned != null) 'cloned': cloned,
+          'cloned': ?cloned,
           if (enchantments != null)
             'enchantments': [for (final e in enchantments) e.json],
-          if (equipmentSlot != null) 'equipmentSlot': equipmentSlot,
-          if (gifted != null) 'gifted': gifted,
-          if (inventoryIndex != null) 'inventoryIndex': inventoryIndex,
-          if (modified != null) 'modified': modified,
-          if (markedNew != null) 'markedNew': markedNew,
+          'equipmentSlot': ?equipmentSlot,
+          'gifted': ?gifted,
+          'inventoryIndex': ?inventoryIndex,
+          'modified': ?modified,
+          'markedNew': ?markedNew,
           if (netheriteEnchant != null) 'netheriteEnchant': netheriteEnchant.json,
           'power': power,
           'rarity': rarity.jsonName,
-          if (timesModified != null) 'timesmodified': timesModified,
+          'timesmodified': ?timesModified,
           'type': type,
-          if (upgraded != null) 'upgraded': upgraded,
+          'upgraded': ?upgraded,
         };
 
   final Map<String, dynamic> json;

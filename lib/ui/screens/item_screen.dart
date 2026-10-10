@@ -255,10 +255,10 @@ class ItemScreenState extends State<ItemScreen> {
     final bytes = ImageResolver.instance.imageSourceForItem(item);
     if (bytes != null) {
       return Image.memory(bytes, fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink());
+          errorBuilder: (_, _, _) => const SizedBox.shrink());
     }
     return Image.asset('assets/images/Armor.png',
-        errorBuilder: (_, __, ___) => const SizedBox.shrink());
+        errorBuilder: (_, _, _) => const SizedBox.shrink());
   }
 
   Widget _flagCheckbox(String label, bool checked, VoidCallback onTap) {

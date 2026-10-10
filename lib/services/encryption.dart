@@ -154,10 +154,8 @@ class _EncryptionData {
 
 /// Entry point mirroring `EncryptionProviders.Current`.
 abstract final class EncryptionProviders {
-  static IEncryptionProvider _current = AesEncryptionProvider(SaveKeys.key);
+  static IEncryptionProvider current = AesEncryptionProvider(SaveKeys.key);
 
-  static IEncryptionProvider get current => _current;
-  static set current(IEncryptionProvider provider) => _current = provider;
 
   static IEncryptionProvider local() => AesEncryptionProvider(SaveKeys.key);
   static IEncryptionProvider remote({http.Client? client}) =>

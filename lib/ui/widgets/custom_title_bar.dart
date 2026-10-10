@@ -99,7 +99,7 @@ class _CustomTitleBarState extends State<CustomTitleBar>
             const SizedBox(width: 8),
             Image.asset('assets/images/app_icon.png',
                 width: 16, height: 16,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                errorBuilder: (_, _, _) => const SizedBox.shrink()),
             const SizedBox(width: 8),
             // Drag area fills the rest of the bar.
             Expanded(

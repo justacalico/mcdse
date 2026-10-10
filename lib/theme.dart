@@ -44,7 +44,6 @@ ThemeData buildThemeData(AppTheme theme) {
   return base.copyWith(
     scaffoldBackgroundColor: Colors.black,
     cardColor: const Color(0xFF0A0A0A),
-    dialogBackgroundColor: Colors.black,
     dividerColor: const Color(0xFF1E1E1E),
     colorScheme: darkScheme.copyWith(
       surface: Colors.black,
@@ -53,7 +52,7 @@ ThemeData buildThemeData(AppTheme theme) {
       surfaceContainer: const Color(0xFF101010),
       surfaceContainerHigh: const Color(0xFF161616),
       surfaceContainerHighest: const Color(0xFF1E1E1E),
-    ),
+    ), dialogTheme: DialogThemeData(backgroundColor: Colors.black),
   );
 }
 

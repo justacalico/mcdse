@@ -99,13 +99,13 @@ class MainWindowState extends State<MainWindow> {
     EventLogger.logEvent('openCommandBinding_Executed');
     final typeGroups = [
       XTypeGroup(
-          label: ProfileViewModel.R_encryptedCharacterSaveFiles,
+          label: ProfileViewModel.encryptedCharacterSaveFilesLabel,
           extensions: const ['dat']),
       XTypeGroup(
-          label: ProfileViewModel.R_decryptedCharacterSaveFiles,
+          label: ProfileViewModel.decryptedCharacterSaveFilesLabel,
           extensions: const ['json']),
       const XTypeGroup(
-          label: ProfileViewModel.R_allFiles, extensions: ['*']),
+          label: ProfileViewModel.allFilesLabel, extensions: ['*']),
     ];
     final file = await openFile(
         acceptedTypeGroups: typeGroups,
@@ -332,7 +332,7 @@ class MainWindowState extends State<MainWindow> {
                 ),
                 if (_busy)
                   Container(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     child: const Center(child: BusyIndicator()),
                   ),
               ],
@@ -595,7 +595,7 @@ class _TabsState extends State<_Tabs> {
       },
       style: TextButton.styleFrom(
         backgroundColor:
-            selected ? Colors.black.withOpacity(0.1) : Colors.transparent,
+            selected ? Colors.black.withValues(alpha: 0.1) : Colors.transparent,
       ),
       child: Text(label),
     );

@@ -13,7 +13,7 @@ import 'package:mcdse/viewmodels/storage_chest_equipment_view_model.dart';
 void main() {
   setUpAll(() => SettingsStore.disableIo());
 
-  ProfileSaveFile _profileWithItems() {
+  ProfileSaveFile profileWithItems() {
     return ProfileSaveFile({
       'items': [
         {'type': 'Sword', 'power': 1.0, 'inventoryIndex': 0, 'rarity': 'Common'},
@@ -26,7 +26,7 @@ void main() {
 
   group('ItemListViewModel', () {
     test('addItemToList assigns next inventoryIndex', () {
-      final prop = Property<ProfileSaveFile?>(_profileWithItems());
+      final prop = Property<ProfileSaveFile?>(profileWithItems());
       final vm = MainEquipmentViewModel(prop);
       final item = Item.fromFields(type: 'Sword');
       vm.addItemToList(item);
@@ -35,7 +35,7 @@ void main() {
     });
 
     test('removeItem removes by identity', () {
-      final prop = Property<ProfileSaveFile?>(_profileWithItems());
+      final prop = Property<ProfileSaveFile?>(profileWithItems());
       final vm = MainEquipmentViewModel(prop);
       final item = prop.value!.items![0];
       vm.removeItem(item);
@@ -44,7 +44,7 @@ void main() {
     });
 
     test('duplicate flow: add copy via addItemToList', () {
-      final prop = Property<ProfileSaveFile?>(_profileWithItems());
+      final prop = Property<ProfileSaveFile?>(profileWithItems());
       final vm = MainEquipmentViewModel(prop);
       final original = prop.value!.items![0];
       final copy = original.copy();
@@ -54,7 +54,7 @@ void main() {
     });
 
     test('saveItem replaces selected item', () {
-      final prop = Property<ProfileSaveFile?>(_profileWithItems());
+      final prop = Property<ProfileSaveFile?>(profileWithItems());
       final vm = MainEquipmentViewModel(prop);
       final item = prop.value!.items![0];
       vm.selectItem(item);
@@ -64,7 +64,7 @@ void main() {
     });
 
     test('filter enchanted shows only enchanted items', () {
-      final p = _profileWithItems();
+      final p = profileWithItems();
       p.items!.add(Item.fromFields(
           type: 'Bow',
           enchantments: [
@@ -79,7 +79,7 @@ void main() {
     });
 
     test('equipmentSlotItem + addEquippedItem removes conflicts', () {
-      final prop = Property<ProfileSaveFile?>(_profileWithItems());
+      final prop = Property<ProfileSaveFile?>(profileWithItems());
       final vm = MainEquipmentViewModel(prop);
       final oldSword = Item.fromFields(
           type: 'Sword',
@@ -98,7 +98,7 @@ void main() {
     });
 
     test('move to chest: remove from main, add to chest', () {
-      final p = _profileWithItems();
+      final p = profileWithItems();
       final prop = Property<ProfileSaveFile?>(p);
       final main = MainEquipmentViewModel(prop);
       final chest = StorageChestEquipmentViewModel(prop);

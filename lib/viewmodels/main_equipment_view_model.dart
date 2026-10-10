@@ -1,13 +1,12 @@
 import '../core/property.dart';
 import '../data/enums.dart';
 import '../data/models/item.dart';
-import '../data/models/profile_save_file.dart';
 import '../logic/extensions.dart';
 import 'item_list_view_model.dart';
 
 /// Ported from `ViewModels/MainEquipmentViewModel.cs`.
 class MainEquipmentViewModel extends ItemListViewModel {
-  MainEquipmentViewModel(Property<ProfileSaveFile?> profile) : super(profile);
+  MainEquipmentViewModel(super.profile);
 
   @override
   List<Item> get items => profile.value?.items ?? const [];

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mcdse/viewmodels/storage_chest_equipment_view_model.dart';
 
 import '../../app_model.dart';
 import '../../data/enums.dart';
@@ -22,7 +23,7 @@ class ChestTab extends StatefulWidget {
 
 class ChestTabState extends State<ChestTab> {
   ProfileViewModel get _model => widget.model;
-  get _equipmentModel => _model.storageChestEquipmentModel;
+  StorageChestEquipmentViewModel get _equipmentModel => _model.storageChestEquipmentModel;
 
   void deleteCurrentSelectedItem() {
     final item = _equipmentModel.selectedItem.value;
@@ -101,7 +102,7 @@ class ChestTabState extends State<ChestTab> {
                         if (selectedEnchantment != null) ...[
                           Positioned.fill(
                             child:
-                                Container(color: Colors.black.withOpacity(0.5)),
+                                Container(color: Colors.black.withValues(alpha: 0.5)),
                           ),
                           Center(
                             child: Padding(

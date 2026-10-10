@@ -5,75 +5,73 @@ import 'dart:typed_data';
 /// the C# `BinaryReader` usage in PakReader.
 class PakBinaryReader {
   PakBinaryReader(this._data, [int offset = 0])
-      : _position = offset;
+      : position = offset;
 
   final Uint8List _data;
-  int _position;
+  int position;
 
   late final ByteData _view =
       ByteData.sublistView(_data.buffer.asUint8List(_data.offsetInBytes, _data.lengthInBytes));
 
-  int get position => _position;
-  set position(int value) => _position = value;
   int get length => _data.length;
 
-  void seek(int offset) => _position = offset;
-  void skip(int bytes) => _position += bytes;
+  void seek(int offset) => position = offset;
+  void skip(int bytes) => position += bytes;
 
-  int readUint8() => _data[_position++];
-  int readInt8() => _view.getInt8(_position++);
+  int readUint8() => _data[position++];
+  int readInt8() => _view.getInt8(position++);
   int readInt16() {
-    final v = _view.getInt16(_position, Endian.little);
-    _position += 2;
+    final v = _view.getInt16(position, Endian.little);
+    position += 2;
     return v;
   }
 
   int readUInt16() {
-    final v = _view.getUint16(_position, Endian.little);
-    _position += 2;
+    final v = _view.getUint16(position, Endian.little);
+    position += 2;
     return v;
   }
 
   int readInt32() {
-    final v = _view.getInt32(_position, Endian.little);
-    _position += 4;
+    final v = _view.getInt32(position, Endian.little);
+    position += 4;
     return v;
   }
 
   int readUInt32() {
-    final v = _view.getUint32(_position, Endian.little);
-    _position += 4;
+    final v = _view.getUint32(position, Endian.little);
+    position += 4;
     return v;
   }
 
   int readInt64() {
-    final v = _view.getInt64(_position, Endian.little);
-    _position += 8;
+    final v = _view.getInt64(position, Endian.little);
+    position += 8;
     return v;
   }
 
   int readUInt64() {
-    final v = _view.getUint64(_position, Endian.little);
-    _position += 8;
+    final v = _view.getUint64(position, Endian.little);
+    position += 8;
     return v;
   }
 
   double readFloat() {
-    final v = _view.getFloat32(_position, Endian.little);
-    _position += 4;
+    final v = _view.getFloat32(position, Endian.little);
+    position += 4;
     return v;
   }
 
   double readDouble() {
-    final v = _view.getFloat64(_position, Endian.little);
-    _position += 8;
+    final v = _view.getFloat64(position, Endian.little);
+    position += 8;
     return v;
   }
 
   Uint8List readBytes(int count) {
-    final end = _position + count;
-    final out = Uint8List.sublistView(_data, _position, end);
-    _position = end;
+    final end = position + count;
+    final out = Uint8List.sublistView(_data, position, end);
+    position = end;
     return out;
   }
 

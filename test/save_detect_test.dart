@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mcdse/data/constants.dart';
@@ -9,7 +10,9 @@ void main() {
     final dirs = Constants.detectedSaveDirectories();
     print('dirs: $dirs');
     final files = Constants.detectedSaveFiles();
-    for (final f in files) print('  ${f.path}  ${f.lastModifiedSync()}');
+    for (final f in files) {
+      print('  ${f.path}  ${f.lastModifiedSync()}');
+    }
     if (Directory('/mnt/FuckBTRFS/SteamLibrary/steamapps/compatdata/1672970').existsSync()) {
       expect(dirs, isNotEmpty);
       expect(files, isNotEmpty);

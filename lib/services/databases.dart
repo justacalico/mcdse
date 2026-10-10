@@ -1,4 +1,5 @@
 /// Ports of `Services/Databases/*`.
+library;
 
 abstract final class EnchantmentDatabase {
   static final Set<String> allEnchantments = <String>{};

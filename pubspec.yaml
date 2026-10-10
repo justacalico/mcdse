@@ -47,6 +47,7 @@ dependencies:
   image: ^4.10.1
   mcp_dart: ^2.4.2
 
+  path: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

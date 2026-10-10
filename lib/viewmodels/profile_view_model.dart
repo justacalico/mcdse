@@ -38,17 +38,17 @@ class ProfileViewModel {
   }
 
   static const Map<String, String> supportedFileTypesDict = {
-    '*${Constants.encryptedFileExtension}': R_encryptedCharacterSaveFiles,
-    '*${Constants.decryptedFileExtension}': R_decryptedCharacterSaveFiles,
-    '*.*': R_allFiles,
+    '*${Constants.encryptedFileExtension}': encryptedCharacterSaveFilesLabel,
+    '*${Constants.decryptedFileExtension}': decryptedCharacterSaveFilesLabel,
+    '*.*': allFilesLabel,
   };
 
   // Resource strings duplicated here to keep this map `const`-able.
-  static const String R_encryptedCharacterSaveFiles =
+  static const String encryptedCharacterSaveFilesLabel =
       'Encrypted Character Save files';
-  static const String R_decryptedCharacterSaveFiles =
+  static const String decryptedCharacterSaveFilesLabel =
       'Decrypted Character Save files';
-  static const String R_allFiles = 'All files';
+  static const String allFilesLabel = 'All files';
 
   late final MainEquipmentViewModel mainEquipmentModel;
   late final StorageChestEquipmentViewModel storageChestEquipmentModel;
@@ -81,8 +81,8 @@ class ProfileViewModel {
             .firstOrNull;
         currency ??= Currency.fromFields(type: currencyName);
         currency.count = value;
-        final updated = [currency]
-          ..addAll(currencies.where((c) => c.type != currencyName));
+        final updated = [currency, ...currencies.where((c) => c.type != currencyName)]
+          ;
         updated.sort((a, b) => a.type.compareTo(b.type));
         p.currency = updated;
       },

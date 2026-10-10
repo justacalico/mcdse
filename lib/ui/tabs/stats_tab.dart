@@ -57,7 +57,7 @@ class StatsTab extends StatelessWidget {
               children: [
                 for (final pair in stats.entries)
                   StatField(
-                    key: ValueKey('${title}/${pair.key}'),
+                    key: ValueKey('$title/${pair.key}'),
                     title: pair.key,
                     value: pair.value,
                     minValue: 0,
