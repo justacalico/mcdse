@@ -6,6 +6,10 @@ stages:
 
 image: ghcr.io/cirruslabs/flutter:stable
 
+default:
+  tags:
+    - linux-truenas
+
 variables:
   FF_DISABLE_GPU: "true"
 
