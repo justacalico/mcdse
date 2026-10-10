@@ -10,6 +10,7 @@ import '../../viewmodels/main_equipment_view_model.dart';
 import '../property_widgets.dart';
 import '../widgets/item_control.dart';
 import '../widgets/stepper.dart';
+import '../windows/selection_window.dart';
 
 /// Ported from `Screens/EquipmentScreen.xaml(.cs)` — level editor, character
 /// power, and the six equipment slots.
@@ -79,6 +80,18 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
   void _addNewEquippedItem(EquipmentSlotEnum slot) {
     EventLogger.logEvent('addNewEquippedItemButton_Click',
         {'equipmentSlot': slot.toString()});
+    if (AppModel.gameContentLoaded) {
+      SelectionWindow.showFilteredItems(
+              context, Constants.itemFilterForEquipmentSlot(slot), null)
+          .then((picked) {
+        if (picked == null || picked.isEmpty) return;
+        final item = Constants.createDefaultItemForEquipmentSlot(slot);
+        item.type = picked;
+        _model.addEquippedItem(item);
+        _model.selectItem(item);
+      });
+      return;
+    }
     final item = Constants.createDefaultItemForEquipmentSlot(slot);
     _model.addEquippedItem(item);
     _model.selectItem(item);

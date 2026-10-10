@@ -9,6 +9,7 @@ import '../../services/string_library.dart';
 import '../../viewmodels/item_list_view_model.dart';
 import '../property_widgets.dart';
 import '../widgets/item_control.dart';
+import '../windows/selection_window.dart';
 
 /// Ported from `Screens/ItemListScreen.xaml(.cs)` — filter buttons, item grid,
 /// count label, and the "+" add-item tile.
@@ -26,14 +27,32 @@ class ItemListScreen extends StatelessWidget {
     model.filter.setValue = filter;
   }
 
-  void _addNewItem() {
+  void _addNewItem(BuildContext context) {
     final currentFilter = model.filter.value;
-    if (currentFilter == ItemFilterEnum.enchanted ||
-        currentFilter == ItemFilterEnum.all) {
-      return;
-    }
+    if (currentFilter == ItemFilterEnum.enchanted) return;
     EventLogger.logEvent('addNewItemButton_Click',
         {'currentFilter': currentFilter.toString()});
+    if (AppModel.gameContentLoaded) {
+      final picker = currentFilter == ItemFilterEnum.all
+          ? SelectionWindow.showItems(context, null)
+          : SelectionWindow.showFilteredItems(context, currentFilter, null);
+      picker.then((picked) {
+        if (picked == null || picked.isEmpty) return;
+        final item = currentFilter == ItemFilterEnum.all
+            ? Item.fromFields(
+                markedNew: true,
+                upgraded: false,
+                power: 1,
+                rarity: Rarity.common,
+                type: picked)
+            : Constants.createDefaultItemForFilter(currentFilter)
+          ..type = picked;
+        model.addItemToList(item);
+        model.selectItem(item);
+      });
+      return;
+    }
+    if (currentFilter == ItemFilterEnum.all) return;
     final item = Constants.createDefaultItemForFilter(currentFilter);
     model.addItemToList(item);
     model.selectItem(item);
@@ -95,7 +114,7 @@ class ItemListScreen extends StatelessWidget {
                     ? const SizedBox.shrink()
                     : SingleChildScrollView(
                         padding: const EdgeInsets.all(10),
-                        child: _buildGrid(items, currentFilter),
+                        child: _buildGrid(context, items, currentFilter),
                       ),
               ),
               // Count label.
@@ -142,7 +161,7 @@ class ItemListScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGrid(List<Item> items, ItemFilterEnum currentFilter) {
+  Widget _buildGrid(BuildContext context, List<Item> items, ItemFilterEnum currentFilter) {
     final children = <Widget>[
       for (final item in items)
         SizedBox(
@@ -158,9 +177,9 @@ class ItemListScreen extends StatelessWidget {
         ),
     ];
 
-    // "+" tile appears on typed filters only (not All/Enchanted).
+    // "+" tile appears for every filter except Enchanted (a new item has
+    // no enchantments, so it would be filtered out immediately).
     if (currentFilter != ItemFilterEnum.enchanted &&
-        currentFilter != ItemFilterEnum.all &&
         model.profile.value != null) {
       children.add(SizedBox(
         width: itemSide,
@@ -168,7 +187,7 @@ class ItemListScreen extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: _addNewItem,
+            onTap: () => _addNewItem(context),
             child: const Center(
                 child: Text('+', style: TextStyle(fontSize: 28))),
           ),
