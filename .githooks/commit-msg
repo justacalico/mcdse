@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Prefix non-conventional subjects with "misc:" so cog check doesn't break.
+subject=$(head -1 "$1")
+if ! echo "$subject" | grep -qE '^(feat|fix|chore|ci|docs|refactor|style|test|perf|revert|build|misc)(\(.+\))?: .+'; then
+  echo "misc: $subject" > "$1"
+fi

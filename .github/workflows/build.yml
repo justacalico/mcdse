@@ -1,0 +1,95 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [master, main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter test
+
+  linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libayatana-appindicator3-dev
+      - run: flutter pub get && flutter build linux --release
+      - name: Package
+        run: |
+          cd build/linux/x64/release/bundle
+          tar -czf "$GITHUB_WORKSPACE/mcdse-linux-x64.tar.gz" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcdse-linux-x64
+          path: mcdse-linux-x64.tar.gz
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - name: Package
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath mcdse-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcdse-windows-x64
+          path: mcdse-windows-x64.zip
+
+  macos:
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build macos --release
+      - name: Package
+        run: |
+          cd build/macos/Build/Products/Release
+          tar -czf "$GITHUB_WORKSPACE/mcdse-macos.tar.gz" mcdse.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcdse-macos
+          path: mcdse-macos.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            artifacts/mcdse-linux-x64/mcdse-linux-x64.tar.gz
+            artifacts/mcdse-windows-x64/mcdse-windows-x64.zip
+            artifacts/mcdse-macos/mcdse-macos.tar.gz

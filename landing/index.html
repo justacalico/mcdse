@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCDSE — Minecraft Dungeons Save Editor</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #12141a; color: #e8eaed; }
+  header { padding: 4rem 1.5rem 2rem; text-align: center; background: linear-gradient(160deg, #1a2a1a, #12141a); }
+  h1 { font-size: 3rem; margin: 0 0 .5rem; }
+  .tagline { color: #9aa0a6; font-size: 1.25rem; }
+  .badge { display: inline-block; margin-top: 1rem; padding: .4rem .9rem; border-radius: 999px; background: #2a4a2a; color: #9be89b; font-size: .9rem; }
+  section { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h2 { border-bottom: 1px solid #2a2f3a; padding-bottom: .4rem; }
+  ul { line-height: 1.9; }
+  code { background: #1e2230; padding: .15rem .4rem; border-radius: 4px; font-size: .9em; }
+  .download { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+  .download a { flex: 1; min-width: 160px; text-align: center; padding: 1rem; border: 1px solid #3a4a3a; border-radius: 8px; color: #9be89b; text-decoration: none; transition: background .15s; }
+  .download a:hover { background: #1a2a1a; }
+  footer { text-align: center; color: #5f6368; padding: 2rem; font-size: .85rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>MCDSE</h1>
+  <p class="tagline">A save-file editor for Minecraft Dungeons — rebuilt in Flutter for desktop.</p>
+  <span class="badge">Linux · Windows · macOS</span>
+</header>
+
+<section>
+  <h2>Features</h2>
+  <ul>
+    <li>Open and save both encrypted (<code>.dat</code>) and decrypted (<code>.json</code>) character files — format converts automatically</li>
+    <li>Edit currencies, character level, power, and enchantment points</li>
+    <li>Full inventory &amp; storage chest management — filter, add, duplicate, delete, and move items</li>
+    <li>Per-item editing: power, rarity, flags, enchantments, gilded enchantments, armor properties</li>
+    <li>Reads item art and localized names from your game's own pak files, with a built-in fallback mode</li>
+    <li>Progress counters &amp; mob kills, portal unlock, recent files, drag-and-drop</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Download</h2>
+  <p>Grab the latest release for your platform:</p>
+  <div class="download">
+    <a href="https://gitlab.com/HttpAnimations/mcdse/-/releases">Linux (.tar.gz)</a>
+    <a href="https://gitlab.com/HttpAnimations/mcdse/-/releases">Windows (.zip)</a>
+    <a href="https://gitlab.com/HttpAnimations/mcdse/-/releases">macOS (.tar.gz)</a>
+  </div>
+</section>
+
+<section>
+  <h2>Source</h2>
+  <p>
+    MCDSE is a desktop Flutter port of the original
+    <a href="https://github.com/CutFlame/MCDSaveEdit">MCDSaveEdit</a>
+    (C#/WPF) by Michael Holt. MIT licensed.
+  </p>
+  <p><code>git clone https://gitlab.com/HttpAnimations/mcdse.git</code></p>
+</section>
+
+<footer>
+  Not affiliated with Mojang Studios or Microsoft. Game images are extracted
+  from your own installation at runtime and remain © Mojang.
+</footer>
+</body>
+</html>
+EOF
+echo ok
