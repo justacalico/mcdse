@@ -1,6 +1,13 @@
 # MCDSE
 
-A Flutter desktop port of
+[![Pipeline](https://gitlab.com/HttpAnimations/mcdse/badges/master/pipeline.svg)](https://gitlab.com/HttpAnimations/mcdse/-/pipelines)
+[![Release](https://gitlab.com/HttpAnimations/mcdse/-/badges/release.svg)](https://gitlab.com/HttpAnimations/mcdse/-/releases)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://gitlab.com/HttpAnimations/mcdse/-/blob/master/LICENSE)
+
+**[Download](https://gitlab.com/HttpAnimations/mcdse/-/releases) ·
+[Website](https://httpanimations.gitlab.io/mcdse/)**
+
+A desktop port of
 [MCDSaveEdit](https://github.com/CutFlame/MCDSaveEdit) — an editor for
 *Minecraft Dungeons* character save files.
 
@@ -91,5 +98,5 @@ assets extracted at runtime from game files are Copyright © Mojang.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Original C#/WPF implementation by
+AGPL-3.0 — see [LICENSE](LICENSE). Original C#/WPF implementation by
 Michael Holt (CutFlame), MIT.
