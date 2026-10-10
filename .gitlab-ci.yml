@@ -4,7 +4,7 @@ stages:
   - pages
   - deploy
 
-image: ghcr.io/cirruslabs/flutter:stable
+image: ghcr.io/cirruslabs/flutter:3.47.7
 
 default:
   tags:
